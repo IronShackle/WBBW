@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3 uid="uid://322ocwxn2gm2"]
+
+[ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="1_wpq7s"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_n07ev"]
+radius = 8.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_wpq7s"]
+
+[node name="CharacterBody2D" type="CharacterBody2D" groups=["ball"]]
+motion_mode = 1
+
+[node name="BounceComponent" type="Node" parent="."]
+script = ExtResource("1_wpq7s")
+metadata/_custom_type_script = "uid://dij2cg7iuesif"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_n07ev")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -10, 10, 0, 0, 10, -10, 0)
+
+[node name="BallDetection" type="Area2D" parent="."]
+collision_layer = 0
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BallDetection"]
+shape = SubResource("CircleShape2D_wpq7s")

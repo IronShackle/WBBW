@@ -1,0 +1,54 @@
+[gd_scene load_steps=8 format=3 uid="uid://cflssia5voc6d"]
+
+[ext_resource type="Script" uid="uid://c0lewos4h5yf2" path="res://Systems/Physics/physics_manager.gd" id="1_jxerj"]
+[ext_resource type="PackedScene" uid="uid://dss0bqlv1ophq" path="res://Walls.tscn" id="2_ghvq8"]
+[ext_resource type="PackedScene" uid="uid://cmtvkdymkyq2q" path="res://Entities/Player/Player_Ball.tscn" id="3_fuqhk"]
+[ext_resource type="Script" uid="uid://cqo0tfkmlxten" path="res://Entities/Ball/ball_spawner.gd" id="4_oscxy"]
+[ext_resource type="PackedScene" uid="uid://322ocwxn2gm2" path="res://Entities/Ball/Ball.tscn" id="5_eqev2"]
+[ext_resource type="PackedScene" uid="uid://beg8pi5xh6ipb" path="res://Systems/UI/pause_menu.tscn" id="6_3k6gv"]
+[ext_resource type="PackedScene" uid="uid://dh0ag1uprllva" path="res://Systems/UI/sidebar.tscn" id="7_1q8bt"]
+
+[node name="Game" type="Node2D"]
+
+[node name="PhysicsManager" type="Node" parent="." groups=["physics_manager"]]
+script = ExtResource("1_jxerj")
+ball_bounce_restitution = 1.26
+min_bounce_velocity = 0.0
+max_bounce_speed = 600.0
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+
+[node name="StaticBody2D" parent="." instance=ExtResource("2_ghvq8")]
+position = Vector2(-30, -123)
+scale = Vector2(57, 1)
+
+[node name="StaticBody2D2" parent="." instance=ExtResource("2_ghvq8")]
+position = Vector2(3, 115)
+scale = Vector2(57, 1)
+
+[node name="StaticBody2D3" parent="." instance=ExtResource("2_ghvq8")]
+position = Vector2(-139, -6)
+scale = Vector2(1, 33)
+
+[node name="StaticBody2D4" parent="." instance=ExtResource("2_ghvq8")]
+position = Vector2(148, -5)
+scale = Vector2(1, 33)
+
+[node name="Player_Ball" parent="." instance=ExtResource("3_fuqhk")]
+position = Vector2(-54, 39)
+scale = Vector2(1.5, 1.5)
+force_multiplier = 1500.0
+launch_cooldown = 1.0
+
+[node name="BallSpawner" type="Node2D" parent="."]
+position = Vector2(1, -1)
+script = ExtResource("4_oscxy")
+ball_scene = ExtResource("5_eqev2")
+spawn_count = 8
+spawn_radius = 45.0
+
+[node name="PauseMenu" parent="." instance=ExtResource("6_3k6gv")]
+visible = false
+
+[node name="Sidebar" parent="." instance=ExtResource("7_1q8bt")]

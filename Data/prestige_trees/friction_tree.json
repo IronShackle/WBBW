@@ -1,0 +1,61 @@
+{
+	"tree_id": "friction",
+	"tree_name": "Friction Mastery",
+	"nodes": [
+		{
+			"id": "friction_1",
+			"name": "Smooth Operator",
+			"description": "Reduce friction by 10%",
+			"cost": 1.0,
+			"position": {
+				"x": 100.0,
+				"y": 50.0
+			},
+			"requires": [],
+			"effect": {
+				"type": "modify_physics",
+				"target": "friction_deceleration",
+				"operation": "multiply",
+				"value": 0.90000000000000002
+			}
+		},
+		{
+			"id": "friction_2",
+			"name": "Slippery Slope",
+			"description": "Reduce friction by 20%",
+			"cost": 3.0,
+			"position": {
+				"x": 100.0,
+				"y": 150.0
+			},
+			"requires": [
+				"friction_1"
+			],
+			"effect": {
+				"type": "modify_physics",
+				"target": "friction_deceleration",
+				"operation": "multiply",
+				"value": 0.80000000000000004
+			}
+		},
+		{
+			"id": "friction_3",
+			"name": "Frictionless",
+			"description": "Reduce friction by 30%",
+			"cost": 10.0,
+			"position": {
+				"x": 100.0,
+				"y": 250.0
+			},
+			"requires": [
+				"friction_2"
+			],
+			"effect": {
+				"type": "modify_physics",
+				"target": "friction_deceleration",
+				"operation": "multiply",
+				"value": 0.69999999999999996
+			}
+		}
+	]
+}

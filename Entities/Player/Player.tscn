@@ -1,0 +1,42 @@
+[gd_scene load_steps=6 format=3 uid="uid://5wc5epk5tv6n"]
+
+[ext_resource type="Script" uid="uid://clilsj272i6oe" path="res://Systems/Player/player_controller.gd" id="1_vweq0"]
+[ext_resource type="Script" uid="uid://c6bpv8bffaakc" path="res://Systems/Movement/movement_component.gd" id="2_1des2"]
+[ext_resource type="Script" uid="uid://caqrcw05exvj8" path="res://Systems/State Machine/state_machine.gd" id="3_an6q6"]
+[ext_resource type="Script" uid="uid://be8yjs7owest8" path="res://Systems/Combat/charged_attack.gd" id="4_1des2"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_t38ms"]
+
+[node name="CharacterBody2D" type="CharacterBody2D"]
+script = ExtResource("1_vweq0")
+
+[node name="MovementComponent" type="Node" parent="."]
+script = ExtResource("2_1des2")
+max_speed = 500.0
+acceleration_rate = 3000.0
+deceleration_rate = 15.0
+snap_threshold = 45.0
+snap_impulse = 1500.0
+dash_distance = 1800.0
+dash_speed = 1200.0
+metadata/_custom_type_script = "uid://c6bpv8bffaakc"
+
+[node name="MovementMachine" type="Node" parent="."]
+script = ExtResource("3_an6q6")
+metadata/_custom_type_script = "uid://caqrcw05exvj8"
+
+[node name="ActionMachine" type="Node" parent="."]
+script = ExtResource("3_an6q6")
+metadata/_custom_type_script = "uid://caqrcw05exvj8"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ActionMachine"]
+shape = SubResource("RectangleShape2D_t38ms")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-10, -10, 10, -10, 10, 10, -10, 10)
+
+[node name="ChargedAttack" type="Node" parent="."]
+script = ExtResource("4_1des2")
+max_knockback = 8000.0
+movement_speed_while_charging = 0.7
+metadata/_custom_type_script = "uid://be8yjs7owest8"
