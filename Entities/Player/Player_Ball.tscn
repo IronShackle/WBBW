@@ -1,7 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://cmtvkdymkyq2q"]
+[gd_scene load_steps=7 format=3 uid="uid://cmtvkdymkyq2q"]
 
 [ext_resource type="Script" uid="uid://c785gvw6ifmfa" path="res://Systems/Player/player_ball_controller.gd" id="1_8we1c"]
 [ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="2_td4tu"]
+[ext_resource type="Script" uid="uid://ck2qri2o01iog" path="res://Systems/Combat/Hitboxes/ball_hurtbox.gd" id="3_6mtl1"]
+[ext_resource type="Script" uid="uid://cbp1y6tmm5bfn" path="res://Systems/Spawning/budding_spawner.gd" id="3_td4tu"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_6mtl1"]
 radius = 8.0
@@ -9,6 +11,7 @@ radius = 8.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_lgngg"]
 
 [node name="CharacterBody2D" type="CharacterBody2D" groups=["player"]]
+collision_layer = 3
 motion_mode = 1
 script = ExtResource("1_8we1c")
 
@@ -25,8 +28,14 @@ polygon = PackedVector2Array(-9, -9, -9, 8, 8, 8, 8, -9)
 shape = SubResource("CircleShape2D_6mtl1")
 
 [node name="BallDetection" type="Area2D" parent="."]
-collision_layer = 0
+collision_mask = 5
 monitorable = false
+script = ExtResource("3_6mtl1")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BallDetection"]
 shape = SubResource("CircleShape2D_lgngg")
+
+[node name="BuddingSpawner" type="Node" parent="."]
+script = ExtResource("3_td4tu")
+spawn_velocity = 500.0
+spawn_offset = 25.0

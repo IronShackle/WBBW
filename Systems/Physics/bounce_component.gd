@@ -152,47 +152,37 @@ func _handle_ball_collision(other_body: Node2D) -> void:
 	if not other_bounce_component:
 		return
 	
-	# Calculate collision normal (from us to them)
 	var collision_normal = (other_body.global_position - body.global_position).normalized()
 	
-	# Get velocities
 	var v1 = knockback_velocity
 	var v2 = other_bounce_component.knockback_velocity
 	
-	# Project velocities onto collision normal (1D collision along the normal)
 	var v1_normal = v1.dot(collision_normal)
 	var v2_normal = v2.dot(collision_normal)
 	
-	# Calculate relative velocity along normal
 	var relative_velocity_normal = v1_normal - v2_normal
 	
-	# Don't resolve if velocities are separating (moving apart)
-	##if relative_velocity_normal <= 0:
-		##print("  -> Velocities separating (relative: %.2f), skipping" % relative_velocity_normal)
-		##return
+	if relative_velocity_normal <= 0:
+		return
 	
-	## print("  -> Resolving collision! (relative velocity: %.2f)" % relative_velocity_normal)
-	
-	# Elastic collision formula (equal mass, no spin)
 	var restitution = physics_manager.ball_bounce_restitution
 	
-	# Calculate new velocities along normal (swap velocities for equal mass)
-	var v1_normal_new = v2_normal
-	var v2_normal_new = v1_normal
+	# Calculate new velocities with standard exchange
+	var v1_normal_new = v2_normal * restitution
+	var v2_normal_new = v1_normal * restitution
 	
-	# Apply restitution (energy loss)
-	v1_normal_new *= restitution
-	v2_normal_new *= restitution
+	# Add collision kickback for bouncy feel
+	var collision_energy = abs(relative_velocity_normal) * physics_manager.ball_collision_kickback
+	v1_normal_new -= collision_energy
+	v2_normal_new += collision_energy
 	
-	# Calculate velocity changes
+	# Apply velocity changes
 	var v1_change = (v1_normal_new - v1_normal) * collision_normal
 	var v2_change = (v2_normal_new - v2_normal) * collision_normal
 	
-	# Apply velocity changes
 	knockback_velocity += v1_change
 	other_bounce_component.knockback_velocity += v2_change
 	
-	# Set cooldowns
 	var our_id = body.get_instance_id()
 	var their_id = other_body.get_instance_id()
 	
@@ -200,9 +190,6 @@ func _handle_ball_collision(other_body: Node2D) -> void:
 	other_bounce_component.collided_balls[our_id] = ball_collision_cooldown
 	
 	ball_hit.emit(other_body)
-	
-	## print("[BounceComponent] Ball collision resolved! Our vel: %.1f -> %.1f, Their vel: %.1f -> %.1f" % 
-		## [v1.length(), knockback_velocity.length(), v2.length(), other_bounce_component.knockback_velocity.length()])
 
 func _handle_wall_bounce(collision: KinematicCollision2D) -> void:
 	if not physics_manager:

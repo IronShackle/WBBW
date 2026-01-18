@@ -20,10 +20,16 @@ config/icon="res://icon.svg"
 GameManager="*res://Autoloads/game_manager.gd"
 PrestigeManager="*res://Autoloads/prestige_manager.gd"
 
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+
 [global_group]
 
 player=""
 physics_manager=""
+spawn_manager=""
 
 [input]
 

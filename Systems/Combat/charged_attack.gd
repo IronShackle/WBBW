@@ -1,148 +1,146 @@
-# Systems/Combat/charged_attack.gd
-extends Node
+# Components/charged_attack.gd
 class_name ChargedAttack
+extends Node2D
 
-## Charge-hold-release attack that spawns arc hitbox
+## Component that handles charging and launching attacks with hitbox
 
-signal attack_completed()
-signal charge_updated(charge_level: float)
+signal charge_started()
+signal charge_updated(charge_percent: float)
+signal charge_released(direction: Vector2, charge_percent: float)
+signal charge_cancelled()
 
-@export_group("Charge Properties")
-@export var charge_rate: float = 1.0
-@export var min_knockback: float = 200.0
-@export var max_knockback: float = 800.0
+@export var max_charge_time: float = 2.0
+@export var min_charge_time: float = 0.2
+@export var max_launch_speed: float = 1000.0
+@export var min_launch_speed: float = 200.0
+@export var attack_radius: float = 80.0
+@export var knockback_force: float = 600.0
+@export var movement_speed_while_charging: float = 100.0
+@export var can_move_while_charging: bool = true
 
-@export_group("Hitbox Properties")
-@export var hitbox_radius: float = 60.0
-@export var hitbox_angle: float = 120.0
-@export var hitbox_lifetime: float = 0.15
-
-@export_group("Movement")
-@export var movement_speed_while_charging: float = 0.3
-
-var player: Node2D
-var charge_level: float = 0.0
 var is_charging: bool = false
-var is_attacking: bool = false
-var bounce_manager: BounceManager
+var charge_time: float = 0.0
+var charge_start_pos: Vector2
+var charge_direction: Vector2
+var body: CharacterBody2D
 
 
 func _ready() -> void:
-	player = get_parent()
-	
-	# Find bounce manager
-	bounce_manager = get_tree().get_first_node_in_group("bounce_manager")
-	if not bounce_manager:
-		push_warning("ChargedAttack: No BounceManager found in scene")
+	add_to_group("charged_attack")
+	body = get_parent()
 
 
-## Start charging the attack
-func start_charge() -> void:
-	if is_attacking:
-		return
-	
-	is_charging = true
-	charge_level = 0.0
-	charge_updated.emit(charge_level)
-
-
-## Update charge level while button held
-func update_charge(delta: float) -> void:
+func _draw() -> void:
 	if not is_charging:
 		return
 	
-	charge_level = min(charge_level + charge_rate * delta, 1.0)
-	charge_updated.emit(charge_level)
+	# Draw charge indicator
+	var charge_percent = clampf(charge_time / max_charge_time, 0.0, 1.0)
+	var max_arrow_length = 150.0
+	var arrow_length = charge_percent * max_arrow_length
+	
+	if charge_direction.length() > 0:
+		var end_pos = charge_direction.normalized() * arrow_length
+		
+		# Draw arrow line
+		draw_line(Vector2.ZERO, end_pos, Color.ORANGE, 3.0)
+		
+		# Draw arrowhead
+		var arrow_size = 15.0
+		var perpendicular = charge_direction.normalized().rotated(PI / 2) * arrow_size
+		var arrow_back = end_pos - charge_direction.normalized() * arrow_size
+		
+		draw_line(end_pos, arrow_back + perpendicular, Color.ORANGE, 3.0)
+		draw_line(end_pos, arrow_back - perpendicular, Color.ORANGE, 3.0)
+	
+	# Draw attack radius
+	var color = Color(1.0, 0.5, 0.0, 0.3 + (charge_percent * 0.3))
+	draw_arc(Vector2.ZERO, attack_radius, 0, TAU, 32, color, 2.0)
 
 
-## Release and execute the attack
-func release_attack() -> void:
+func update(delta: float) -> void:
+	if is_charging:
+		charge_time += delta
+		var mouse_pos = body.get_global_mouse_position()
+		charge_direction = charge_start_pos - mouse_pos
+		var charge_percent = clampf(charge_time / max_charge_time, 0.0, 1.0)
+		charge_updated.emit(charge_percent)
+		queue_redraw()
+
+
+func start_charge(start_position: Vector2 = Vector2.ZERO) -> void:
+	is_charging = true
+	charge_time = 0.0
+	charge_start_pos = start_position if start_position != Vector2.ZERO else body.global_position
+	charge_direction = Vector2.ZERO
+	charge_started.emit()
+	queue_redraw()
+
+
+func release_charge() -> bool:
+	if not is_charging:
+		return false
+	
+	var was_valid_charge = charge_time >= min_charge_time
+	
+	if was_valid_charge and charge_direction.length() > 0:
+		var charge_percent = clampf(charge_time / max_charge_time, 0.0, 1.0)
+		var normalized_direction = charge_direction.normalized()
+		
+		# Spawn hitbox attack
+		_spawn_attack_hitbox()
+		
+		charge_released.emit(normalized_direction, charge_percent)
+	
+	is_charging = false
+	charge_time = 0.0
+	charge_direction = Vector2.ZERO
+	queue_redraw()
+	
+	return was_valid_charge
+
+
+func cancel_charge() -> void:
 	if not is_charging:
 		return
 	
 	is_charging = false
-	is_attacking = true
-	
-	_execute_attack()
-	
-	# Short delay before allowing next charge
-	await get_tree().create_timer(0.1).timeout
-	is_attacking = false
-	attack_completed.emit()
+	charge_time = 0.0
+	charge_direction = Vector2.ZERO
+	queue_redraw()
+	charge_cancelled.emit()
 
 
-func _execute_attack() -> void:
-	var attack_direction = _get_attack_direction()
-	_spawn_hitbox(attack_direction)
-
-
-func _get_attack_direction() -> Vector2:
-	var mouse_pos = player.get_global_mouse_position()
-	var to_mouse = (mouse_pos - player.global_position).normalized()
-	
-	if to_mouse.length() < 0.1:
-		return Vector2.RIGHT
-	
-	return _snap_direction_to_45(to_mouse)
-
-
-func _snap_direction_to_45(direction: Vector2) -> Vector2:
-	if direction.length() < 0.1:
-		return Vector2.RIGHT
-	
-	var angle = direction.angle()
-	var degrees = rad_to_deg(angle)
-	var snapped_degrees = round(degrees / 45.0) * 45.0
-	
-	return Vector2.from_angle(deg_to_rad(snapped_degrees))
-
-
-func _spawn_hitbox(attack_direction: Vector2) -> void:
+func _spawn_attack_hitbox() -> void:
 	var hitbox = HitboxInstance.new()
-	player.get_tree().current_scene.add_child(hitbox)
+	hitbox.position = Vector2.ZERO
+	hitbox.hitbox_owner = body
 	
-	hitbox.global_position = player.global_position
-	hitbox.rotation = attack_direction.angle()
+	# Create circular attack shape
+	var shape = CircleShape2D.new()
+	shape.radius = attack_radius
 	
-	hitbox.initialize(
-		hitbox_lifetime,
-		ShapePreset.ShapeType.ARC,
-		hitbox_radius,
-		hitbox_angle,
-		Vector2.ZERO
-	)
+	# Configure hitbox
+	hitbox.shape = shape
+	hitbox.knockback_force = knockback_force
+	hitbox.use_radial_knockback = true
+	hitbox.damage = 0
+	hitbox.duration = 0.1
 	
-	hitbox.hit_landed.connect(_on_hitbox_hit)
-
-
-func _on_hitbox_hit(target: Node2D) -> void:
-	if target == player:
-		return  # Don't hit self
+	add_child(hitbox)
 	
-	if not bounce_manager:
-		push_warning("ChargedAttack: Cannot apply knockback, no BounceManager")
-		return
+	print("[ChargedAttack] Spawned attack hitbox (radius: %s, force: %s)" % 
+		[attack_radius, knockback_force])
+
+
+func get_launch_velocity() -> Vector2:
+	if charge_direction.length() == 0:
+		return Vector2.ZERO
 	
-	var knockback_dir = (target.global_position - player.global_position).normalized()
-	var scaled_knockback = lerpf(min_knockback, max_knockback, charge_level)
-	
-	# Apply knockback through BounceComponent
-	var bounce_component = target.get_node_or_null("BounceComponent")
-	if bounce_component:
-		bounce_component.apply_knockback(knockback_dir, scaled_knockback)
-		print("[ChargedAttack] Hit %s with %.1f%% charge (knockback: %.1f)" % [target.name, charge_level * 100, scaled_knockback])
+	var charge_percent = clampf(charge_time / max_charge_time, 0.0, 1.0)
+	var speed = lerpf(min_launch_speed, max_launch_speed, charge_percent)
+	return charge_direction.normalized() * speed
 
 
-## Check if currently charging
-func get_is_charging() -> bool:
-	return is_charging
-
-
-## Check if currently attacking
-func get_is_attacking() -> bool:
-	return is_attacking
-
-
-## Get current charge level (0.0 - 1.0)
-func get_charge_level() -> float:
-	return charge_level
+func get_charge_percent() -> float:
+	return clampf(charge_time / max_charge_time, 0.0, 1.0)

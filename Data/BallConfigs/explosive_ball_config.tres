@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BallConfig" load_steps=3 format=3 uid="uid://ddkkue6rheu32"]
+
+[ext_resource type="PackedScene" uid="uid://bej85qpeg8c0p" path="res://Entities/Ball/explosive_ball.tscn" id="1_1hsqr"]
+[ext_resource type="Script" uid="uid://8upkourbo6nd" path="res://Systems/Spawning/ball_config.gd" id="1_u7yap"]
+
+[resource]
+script = ExtResource("1_u7yap")
+ball_type = "explosive"
+display_name = "Explosive Ball"
+ball_scene = ExtResource("1_1hsqr")
+cost = 25
+max_count = 10
+metadata/_custom_type_script = "uid://8upkourbo6nd"

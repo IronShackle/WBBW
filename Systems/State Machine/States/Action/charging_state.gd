@@ -29,7 +29,7 @@ func enter() -> void:
 
 func update(delta: float, _context: Dictionary) -> void:
 	if charged_attack:
-		charged_attack.update_charge(delta)
+		charged_attack.update(delta)
 
 
 func exit() -> void:

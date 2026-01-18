@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3 uid="uid://bej85qpeg8c0p"]
+
+[ext_resource type="Script" uid="uid://crbiml3k64r6p" path="res://Entities/Ball/explosive_ball.gd" id="1_cbcld"]
+[ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="2_imbr2"]
+[ext_resource type="Script" uid="uid://ck2qri2o01iog" path="res://Systems/Combat/Hitboxes/ball_hurtbox.gd" id="3_imbr2"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_n07ev"]
+radius = 8.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_wpq7s"]
+
+[node name="explosive_ball" type="CharacterBody2D" groups=["ball"]]
+motion_mode = 1
+script = ExtResource("1_cbcld")
+explosion_radius = 35.0
+
+[node name="BounceComponent" type="Node" parent="."]
+script = ExtResource("2_imbr2")
+metadata/_custom_type_script = "uid://dij2cg7iuesif"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_n07ev")
+
+[node name="BallDetection" type="Area2D" parent="."]
+collision_mask = 5
+monitorable = false
+script = ExtResource("3_imbr2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BallDetection"]
+shape = SubResource("CircleShape2D_wpq7s")
+
+[node name="Polygon2D" type="Polygon2D" parent="BallDetection"]
+color = Color(0.8673292, 0.27091187, 0.30328348, 1)
+polygon = PackedVector2Array(0, -10, 10, 0, 0, 10, -10, 0)
