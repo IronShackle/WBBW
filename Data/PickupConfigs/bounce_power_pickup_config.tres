@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PickupConfig" load_steps=4 format=3 uid="uid://cl1n421pjsrje"]
+
+[ext_resource type="Resource" uid="uid://c3rtb140eauhg" path="res://Data/BuffConfigs/bounce_power_config.tres" id="1_tlalq"]
+[ext_resource type="PackedScene" uid="uid://cqgorxun65bv2" path="res://Entities/Pickup/buff_pickup.tscn" id="2_kfi8k"]
+[ext_resource type="Script" uid="uid://cxx1avhtkiydd" path="res://Entities/Pickup/pickup_config.gd" id="3_7ofyi"]
+
+[resource]
+script = ExtResource("3_7ofyi")
+pickup_id = "bounce_power_pickup"
+display_name = "Bounce Power"
+description = "Increases your bounce energy"
+pickup_scene = ExtResource("2_kfi8k")
+buff_config = ExtResource("1_tlalq")
+visual_color = Color(0.973888, 0.9945163, 0, 1)
+metadata/_custom_type_script = "uid://cxx1avhtkiydd"

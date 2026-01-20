@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="BuffConfig" load_steps=2 format=3 uid="uid://c3rtb140eauhg"]
+
+[ext_resource type="Script" uid="uid://b0rodreq82rrh" path="res://Systems/Buffs/buff_config.gd" id="1_t4anm"]
+
+[resource]
+script = ExtResource("1_t4anm")
+buff_id = "bounce_power"
+display_name = "Bounce Power"
+description = "Increases bounce energy"
+buff_script_path = "uid://doiva04f28bkb"
+visual_color = Color(0.9999998, 0.56295794, 0.20345566, 1)
+metadata/_custom_type_script = "uid://b0rodreq82rrh"

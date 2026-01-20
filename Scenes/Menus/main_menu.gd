@@ -5,6 +5,7 @@ extends Control
 @onready var settings_button: Button = $MarginContainer/VBoxContainer/SettingsButton
 @onready var quit_button: Button = $MarginContainer/VBoxContainer/QuitButton
 @onready var prestige_button: Button = $MarginContainer/VBoxContainer/PrestigeButton
+@onready var reset_save_button: Button = $MarginContainer/BottomRightCorner/ResetSaveButton
 
 
 func _ready() -> void:
@@ -12,6 +13,7 @@ func _ready() -> void:
 	prestige_button.pressed.connect(_on_prestige_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
+	reset_save_button.pressed.connect(_on_reset_save_pressed)
 	
 	# Focus play button for keyboard navigation
 	play_button.grab_focus()
@@ -31,3 +33,7 @@ func _on_quit_pressed() -> void:
 
 func _on_prestige_pressed() -> void:
 	GameManager.open_prestige_menu()
+
+func _on_reset_save_pressed() -> void:
+	GameManager.reset_save()
+	get_tree().reload_current_scene()

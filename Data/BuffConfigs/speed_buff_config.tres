@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="BuffConfig" load_steps=2 format=3 uid="uid://drkojh0h36yok"]
+
+[ext_resource type="Script" uid="uid://b0rodreq82rrh" path="res://Systems/Buffs/buff_config.gd" id="1_1016v"]
+
+[resource]
+script = ExtResource("1_1016v")
+description = "Increases max speed"
+buff_script_path = "uid://b3rff6d6cwox7"
+metadata/_custom_type_script = "uid://b0rodreq82rrh"

@@ -1,16 +1,9 @@
-[gd_resource type="Resource" script_class="BallConfig" load_steps=5 format=3 uid="uid://dwap6gxx0xe81"]
+[gd_resource type="Resource" script_class="BallConfig" load_steps=3 format=3 uid="uid://dwap6gxx0xe81"]
 
 [ext_resource type="PackedScene" uid="uid://322ocwxn2gm2" path="res://Entities/Ball/ball.tscn" id="1_kj60v"]
 [ext_resource type="Script" uid="uid://8upkourbo6nd" path="res://Systems/Spawning/ball_config.gd" id="2_wdqgj"]
 
-[sub_resource type="Gradient" id="Gradient_78iee"]
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_8eufq"]
-gradient = SubResource("Gradient_78iee")
-
 [resource]
 script = ExtResource("2_wdqgj")
 ball_scene = ExtResource("1_kj60v")
-max_count = 20
-icon = SubResource("GradientTexture1D_8eufq")
 metadata/_custom_type_script = "uid://8upkourbo6nd"

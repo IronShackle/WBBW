@@ -4,6 +4,8 @@ extends CanvasLayer
 ## In-game sidebar for ball spawning and upgrades
 
 @onready var currency_label: Label = $PanelContainer/MarginContainer/VBoxContainer/CurrencyLabel
+@onready var essence_label: Label = $PanelContainer/MarginContainer/VBoxContainer/EssenceLabel
+@onready var max_balls_label: Label = $PanelContainer/MarginContainer/VBoxContainer/MaxBallsLabel
 @onready var balls_tab_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TabButtons/BallsTabButton
 @onready var upgrades_tab_button: Button = $PanelContainer/MarginContainer/VBoxContainer/TabButtons/UpgradesTabButton
 @onready var balls_tab: ScrollContainer = $PanelContainer/MarginContainer/VBoxContainer/TabContent/BallsTab
@@ -14,7 +16,6 @@ extends CanvasLayer
 
 enum Tab { BALLS, UPGRADES }
 var current_tab: Tab = Tab.BALLS
-var prestige_points_available: int = 0
 
 # References
 var spawn_manager: SpawnManager
@@ -22,6 +23,8 @@ var ball_spawn_buttons: Array[Button] = []
 
 
 func _ready() -> void:
+	add_to_group("sidebar")
+	
 	# Connect tab buttons
 	balls_tab_button.pressed.connect(_on_balls_tab_pressed)
 	upgrades_tab_button.pressed.connect(_on_upgrades_tab_pressed)
@@ -29,13 +32,18 @@ func _ready() -> void:
 	
 	# Connect to GameManager signals
 	GameManager.bounce_currency_changed.connect(_on_bounce_currency_changed)
-	GameManager.prestige_available.connect(_on_prestige_available)
+	GameManager.essence_changed.connect(_on_essence_changed)
+	
+	# Connect to PrestigeManager
+	PrestigeManager.prestige_points_changed.connect(_on_prestige_points_changed)
 	
 	# Find SpawnManager FIRST
-	await _find_spawn_manager()  # Add await here!
+	await _find_spawn_manager()
 	
 	# Initialize display
 	_update_currency_label()
+	_update_essence_label()
+	_update_max_balls_label()
 	_switch_to_tab(Tab.BALLS)
 	_update_prestige_display()
 	
@@ -43,7 +51,6 @@ func _ready() -> void:
 	_create_ball_buttons()
 	_create_upgrade_placeholders()
 	_update_ball_button_states()
-
 
 
 func _find_spawn_manager() -> void:
@@ -69,24 +76,36 @@ func _create_ball_buttons() -> void:
 
 func _create_ball_spawn_button(config: BallConfig) -> Button:
 	var button = Button.new()
-	button.text = "%s\nCost: %d Bounces" % [config.display_name, config.cost]
-	button.custom_minimum_size = Vector2(0, 60)
-	button.add_theme_font_size_override("font_size", 16)
 	
-	_style_spawn_button(button)
+	# Different text for special balls vs regular balls
+	if config.essence_cost > 0:
+		button.text = "%s\nCost: %d Essence\n(Sacrifice all basic balls)" % [config.display_name, config.essence_cost]
+	else:
+		button.text = "%s\nCost: %d Bounces" % [config.display_name, config.cost]
+	
+	button.custom_minimum_size = Vector2(0, 80)
+	button.add_theme_font_size_override("font_size", 14)
+	
+	_style_spawn_button(button, config.essence_cost > 0)
 	
 	return button
 
 
-func _style_spawn_button(button: Button) -> void:
+func _style_spawn_button(button: Button, is_special: bool = false) -> void:
+	# Different colors for special balls
+	var base_color = Color(0.5, 0.2, 0.5) if is_special else Color(0.2, 0.5, 0.3)
+	var hover_color = Color(0.6, 0.3, 0.6) if is_special else Color(0.3, 0.6, 0.4)
+	var border_color = Color(0.7, 0.4, 0.7) if is_special else Color(0.3, 0.7, 0.4)
+	var hover_border = Color(0.8, 0.5, 0.8) if is_special else Color(0.4, 0.8, 0.5)
+	
 	# Normal style
 	var normal_style = StyleBoxFlat.new()
-	normal_style.bg_color = Color(0.2, 0.5, 0.3)
+	normal_style.bg_color = base_color
 	normal_style.border_width_left = 2
 	normal_style.border_width_top = 2
 	normal_style.border_width_right = 2
 	normal_style.border_width_bottom = 2
-	normal_style.border_color = Color(0.3, 0.7, 0.4)
+	normal_style.border_color = border_color
 	normal_style.corner_radius_top_left = 5
 	normal_style.corner_radius_top_right = 5
 	normal_style.corner_radius_bottom_left = 5
@@ -95,12 +114,12 @@ func _style_spawn_button(button: Button) -> void:
 	
 	# Hover style
 	var hover_style = StyleBoxFlat.new()
-	hover_style.bg_color = Color(0.3, 0.6, 0.4)
+	hover_style.bg_color = hover_color
 	hover_style.border_width_left = 2
 	hover_style.border_width_top = 2
 	hover_style.border_width_right = 2
 	hover_style.border_width_bottom = 2
-	hover_style.border_color = Color(0.4, 0.8, 0.5)
+	hover_style.border_color = hover_border
 	hover_style.corner_radius_top_left = 5
 	hover_style.corner_radius_top_right = 5
 	hover_style.corner_radius_bottom_left = 5
@@ -154,8 +173,22 @@ func _on_spawn_ball_pressed(config: BallConfig) -> void:
 		push_warning("No SpawnManager available")
 		return
 	
-	# Check if can afford
-	if GameManager.bounce_currency >= config.cost:
+	# Special balls use essence, regular balls use bounce currency
+	if config.essence_cost > 0:
+		# Check essence
+		if GameManager.essence < config.essence_cost:
+			print("[Sidebar] Not enough essence (%d / %d)" % [GameManager.essence, config.essence_cost])
+			return
+		
+		# Spawn special ball (async - fire and forget)
+		spawn_manager.spawn_special_ball(config)
+	else:
+		# Check bounce currency
+		if GameManager.bounce_currency < config.cost:
+			print("[Sidebar] Cannot afford %s (need %d, have %d)" % 
+				[config.display_name, config.cost, GameManager.bounce_currency])
+			return
+		
 		if spawn_manager.spawn_ball(config):
 			# Deduct cost
 			GameManager.bounce_currency -= config.cost
@@ -163,9 +196,6 @@ func _on_spawn_ball_pressed(config: BallConfig) -> void:
 			print("[Sidebar] Spawned %s for %d bounces" % [config.display_name, config.cost])
 		else:
 			print("[Sidebar] Cannot spawn - at max capacity or failed")
-	else:
-		print("[Sidebar] Cannot afford %s (need %d, have %d)" % 
-			[config.display_name, config.cost, GameManager.bounce_currency])
 
 
 func _switch_to_tab(tab: Tab) -> void:
@@ -209,8 +239,12 @@ func _on_bounce_currency_changed(new_amount: int) -> void:
 	_update_ball_button_states()
 
 
-func _on_prestige_available(current_bounces: int, threshold: int) -> void:
-	prestige_points_available = int(current_bounces / 10.0)
+func _on_essence_changed(new_amount: int) -> void:
+	_update_essence_label()
+	_update_ball_button_states()
+
+
+func _on_prestige_points_changed(new_amount: int) -> void:
 	_update_prestige_display()
 
 
@@ -222,6 +256,17 @@ func _update_currency_label() -> void:
 	currency_label.text = "Bounces: %d" % GameManager.bounce_currency
 
 
+func _update_essence_label() -> void:
+	essence_label.text = "Essence: %d" % GameManager.essence
+
+
+func _update_max_balls_label() -> void:
+	if not spawn_manager or not spawn_manager.config_manager:
+		return
+	var config = spawn_manager.config_manager
+	max_balls_label.text = "Max Basic Balls: %d" % config.max_basic_balls
+
+
 func _update_ball_button_states() -> void:
 	if not spawn_manager:
 		return
@@ -230,16 +275,64 @@ func _update_ball_button_states() -> void:
 		var button = ball_spawn_buttons[i]
 		var config = spawn_manager.spawnable_balls[i]
 		
-		var can_afford = GameManager.bounce_currency >= config.cost
 		var can_spawn = spawn_manager.can_spawn_ball_type(config)
 		
-		button.disabled = not (can_afford and can_spawn)
+		# For regular balls, also check currency
+		if config.essence_cost == 0:
+			var can_afford = GameManager.bounce_currency >= config.cost
+			button.disabled = not (can_afford and can_spawn)
+		else:
+			# For special balls, can_spawn already checks essence and basic ball count
+			button.disabled = not can_spawn
 
 
 func _update_prestige_display() -> void:
-	if prestige_points_available > 0:
+	# Show prestige button if player has ANY prestige points to spend
+	if PrestigeManager.prestige_points > 0:
 		prestige_section.visible = true
-		prestige_points_label.text = "Prestige Points: +%d" % prestige_points_available
+		prestige_points_label.text = "Prestige Points: %d" % PrestigeManager.prestige_points
 		prestige_button.disabled = false
 	else:
 		prestige_section.visible = false
+
+
+## Called when max basic balls increases - triggers visual animation
+func animate_max_balls_increase(old_max: int, new_max: int) -> void:
+	var increase_amount = new_max - old_max
+	
+	print("[Sidebar] Animating max increase: %d -> %d" % [old_max, new_max])
+	
+	# Create floating "+X Max!" popup
+	var popup = Label.new()
+	popup.text = "+%d Max!" % increase_amount
+	popup.add_theme_font_size_override("font_size", 32)
+	popup.add_theme_color_override("font_color", Color.GREEN)
+	popup.z_index = 99
+	
+	# Position near max_balls_label
+	var global_pos = max_balls_label.get_global_transform_with_canvas().origin
+	popup.position = global_pos + Vector2(150, 0)  # Offset to the left of the label
+	add_child(popup)
+	
+	# Animate popup floating up and fading
+	var popup_tween = create_tween()
+	popup_tween.set_parallel(true)
+	popup_tween.tween_property(popup, "position:y", popup.position.y - 60, 1.2)
+	popup_tween.tween_property(popup, "modulate:a", 0.0, 1.2)
+	popup_tween.finished.connect(popup.queue_free)
+	
+	# Flash the max balls label green
+	var flash_tween = create_tween()
+	flash_tween.tween_property(max_balls_label, "modulate", Color.GREEN, 0.1)
+	
+	# Animate counter counting up
+	var duration = 0.5
+	var count_tween = create_tween()
+	
+	for i in range(increase_amount + 1):
+		var value = old_max + i
+		count_tween.tween_callback(func(): max_balls_label.text = "Max Basic Balls: %d" % value)
+		count_tween.tween_interval(duration / increase_amount)
+	
+	# Fade label back to white
+	count_tween.tween_property(max_balls_label, "modulate", Color.WHITE, 0.3)

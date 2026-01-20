@@ -9,6 +9,19 @@ signal node_unlocked(tree_id: String, node_id: String)
 var trees: Dictionary = {}  # tree_id -> PrestigeTree
 var prestige_points: int = 0
 
+# Config modifiers applied by prestige upgrades
+var config_modifiers: Dictionary = {
+	"max_basic_balls": 1.0,
+	"max_explosive_balls": 1.0,
+	"max_total_balls": 1.0,
+	"pickup_lifetime": 1.0,
+	"pickup_spawn_interval": 1.0,
+	"max_active_pickups": 1.0,
+	"speed_boost_duration": 1.0,
+	"bounce_power_duration": 1.0,
+	"size_boost_duration": 1.0,
+}
+
 
 func _ready() -> void:
 	load_all_trees()
@@ -81,3 +94,22 @@ func add_prestige_points(amount: int) -> void:
 func set_prestige_points(amount: int) -> void:
 	prestige_points = amount
 	prestige_points_changed.emit(prestige_points)
+
+
+## Get config modifier value (1.0 = no modifier)
+func get_config_modifier(config_key: String) -> float:
+	return config_modifiers.get(config_key, 1.0)
+
+
+## Set config modifier (called by prestige node effects)
+func set_config_modifier(config_key: String, value: float) -> void:
+	config_modifiers[config_key] = value
+	print("[PrestigeManager] Set %s modifier to %.2f" % [config_key, value])
+
+
+## Multiply existing config modifier (for stacking upgrades)
+func multiply_config_modifier(config_key: String, multiplier: float) -> void:
+	var current = config_modifiers.get(config_key, 1.0)
+	config_modifiers[config_key] = current * multiplier
+	print("[PrestigeManager] Multiplied %s modifier: %.2f -> %.2f" % 
+		[config_key, current, config_modifiers[config_key]])

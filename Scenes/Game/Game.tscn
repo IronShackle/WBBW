@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cflssia5voc6d"]
+[gd_scene load_steps=15 format=3 uid="uid://cflssia5voc6d"]
 
 [ext_resource type="Script" uid="uid://c0lewos4h5yf2" path="res://Systems/Physics/physics_manager.gd" id="1_jxerj"]
 [ext_resource type="Script" uid="uid://cey2np8cbtlkk" path="res://Systems/Spawning/spawn_manager.gd" id="2_gvja8"]
@@ -8,7 +8,12 @@
 [ext_resource type="Resource" uid="uid://ddkkue6rheu32" path="res://Data/BallConfigs/explosive_ball_config.tres" id="5_m1o7v"]
 [ext_resource type="PackedScene" uid="uid://beg8pi5xh6ipb" path="res://Systems/UI/pause_menu.tscn" id="6_3k6gv"]
 [ext_resource type="Script" uid="uid://b8ih4464pl8gu" path="res://Systems/Barriers/barrier_manager.gd" id="6_m1o7v"]
-[ext_resource type="PackedScene" uid="uid://dh0ag1uprllva" path="res://Systems/UI/sidebar.tscn" id="7_1q8bt"]
+[ext_resource type="Script" uid="uid://cxx1avhtkiydd" path="res://Entities/Pickup/pickup_config.gd" id="6_ti1oi"]
+[ext_resource type="PackedScene" path="res://Systems/UI/sidebar.tscn" id="7_1q8bt"]
+[ext_resource type="Script" uid="uid://ieqmvtwoqr0a" path="res://Systems/Config/game_config_manager.gd" id="7_3586x"]
+[ext_resource type="Resource" uid="uid://cl1n421pjsrje" path="res://Data/PickupConfigs/bounce_power_pickup_config.tres" id="8_edkrd"]
+[ext_resource type="PackedScene" uid="uid://dmgsmls47pyd4" path="res://Entities/Pickup/essence_pickup.tscn" id="10_bsqcq"]
+[ext_resource type="Script" uid="uid://ca3onv77bj0n1" path="res://Systems/Camera/camera_controller.gd" id="11_bsqcq"]
 
 [node name="Game" type="Node2D"]
 
@@ -20,7 +25,8 @@ max_bounce_speed = 800.0
 [node name="SpawnManager" type="Node" parent="." groups=["spawn_manager"]]
 script = ExtResource("2_gvja8")
 spawnable_balls = Array[ExtResource("3_m1o7v")]([ExtResource("4_3586x"), ExtResource("5_m1o7v")])
-max_total_balls = 30
+spawnable_pickups = Array[ExtResource("6_ti1oi")]([ExtResource("8_edkrd")])
+pickup_spawning_enabled = true
 metadata/_custom_type_script = "uid://cey2np8cbtlkk"
 
 [node name="BarrierManager" type="Node" parent="."]
@@ -28,9 +34,17 @@ script = ExtResource("6_m1o7v")
 starting_barriers = 50
 barrier_thickness = 25.0
 initial_play_area_size = Vector2(250, 250)
+bounce_requirements = Array[int]([50, 10, 20, 20, 20, 1000, 1500, 2000, 3000, 5000])
+barrier_zoom_levels = Array[float]([3.0, 2.0, 1.8, 1.5, 1.5, 1.25, 1.1, 1.0, 1.0, 1.0])
+essence_pickup_scene = ExtResource("10_bsqcq")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-zoom = Vector2(2, 2)
+[node name="GameConfigManager" type="Node" parent="." groups=["game_config_manager"]]
+script = ExtResource("7_3586x")
+base_max_basic_balls = 10
+metadata/_custom_type_script = "uid://ieqmvtwoqr0a"
+
+[node name="Camera2D" type="Camera2D" parent="." groups=["camera"]]
+script = ExtResource("11_bsqcq")
 
 [node name="PauseMenu" parent="." instance=ExtResource("6_3k6gv")]
 visible = false

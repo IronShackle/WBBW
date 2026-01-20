@@ -9,5 +9,6 @@ ball_type = "explosive"
 display_name = "Explosive Ball"
 ball_scene = ExtResource("1_1hsqr")
 cost = 25
-max_count = 10
+essence_cost = 5
+description = "Charges on collisions and explodes with knockback"
 metadata/_custom_type_script = "uid://8upkourbo6nd"

@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://cqgorxun65bv2"]
+
+[ext_resource type="Script" uid="uid://dywtjgo0dtryu" path="res://Entities/Pickup/buff_pickup.gd" id="1_c3y6e"]
+
+[node name="BuffPickup" type="Area2D"]
+script = ExtResource("1_c3y6e")
+metadata/_custom_type_script = "uid://dywtjgo0dtryu"

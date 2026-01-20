@@ -1,8 +1,9 @@
-[gd_scene load_steps=7 format=3 uid="uid://cmtvkdymkyq2q"]
+[gd_scene load_steps=8 format=3 uid="uid://cmtvkdymkyq2q"]
 
 [ext_resource type="Script" uid="uid://c785gvw6ifmfa" path="res://Systems/Player/player_ball_controller.gd" id="1_8we1c"]
 [ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="2_td4tu"]
 [ext_resource type="Script" uid="uid://ck2qri2o01iog" path="res://Systems/Combat/Hitboxes/ball_hurtbox.gd" id="3_6mtl1"]
+[ext_resource type="Script" uid="uid://cdly8mxa5rmdi" path="res://Systems/Buffs/buff_component.gd" id="3_lgngg"]
 [ext_resource type="Script" uid="uid://cbp1y6tmm5bfn" path="res://Systems/Spawning/budding_spawner.gd" id="3_td4tu"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_6mtl1"]
@@ -18,6 +19,10 @@ script = ExtResource("1_8we1c")
 [node name="BounceComponent" type="Node" parent="."]
 script = ExtResource("2_td4tu")
 metadata/_custom_type_script = "uid://dij2cg7iuesif"
+
+[node name="BuffComponent" type="Node" parent="."]
+script = ExtResource("3_lgngg")
+metadata/_custom_type_script = "uid://cdly8mxa5rmdi"
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
 position = Vector2(0.47058916, 0.47058868)
@@ -39,3 +44,18 @@ shape = SubResource("CircleShape2D_lgngg")
 script = ExtResource("3_td4tu")
 spawn_velocity = 500.0
 spawn_offset = 25.0
+
+[node name="CollisionParticles" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 5
+lifetime = 0.45
+one_shot = true
+explosiveness = 1.0
+lifetime_randomness = 0.73
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 67.04
+initial_velocity_max = 77.34
+linear_accel_min = 47.42
+linear_accel_max = 47.42
+scale_amount_max = 2.0

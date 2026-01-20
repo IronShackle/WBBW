@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PickupConfig" load_steps=4 format=3 uid="uid://ctfmcjgbbue5a"]
+
+[ext_resource type="Resource" uid="uid://drkojh0h36yok" path="res://Data/BuffConfigs/speed_buff_config.tres" id="1_707yq"]
+[ext_resource type="Script" uid="uid://cxx1avhtkiydd" path="res://Entities/Pickup/pickup_config.gd" id="1_ff4ll"]
+[ext_resource type="PackedScene" uid="uid://cqgorxun65bv2" path="res://Entities/Pickup/buff_pickup.tscn" id="2_koysy"]
+
+[resource]
+script = ExtResource("1_ff4ll")
+pickup_scene = ExtResource("2_koysy")
+buff_config = ExtResource("1_707yq")
+metadata/_custom_type_script = "uid://cxx1avhtkiydd"

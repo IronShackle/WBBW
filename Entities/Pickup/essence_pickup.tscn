@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://dmgsmls47pyd4"]
+
+[ext_resource type="Script" uid="uid://b1h2niac7apr1" path="res://Entities/Pickup/essence_pickup.gd" id="1_f5mdq"]
+
+[node name="EssencePickup" type="Area2D"]
+script = ExtResource("1_f5mdq")
+metadata/_custom_type_script = "uid://b1h2niac7apr1"

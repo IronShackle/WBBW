@@ -30,6 +30,8 @@ window/size/viewport_height=1080
 player=""
 physics_manager=""
 spawn_manager=""
+game_config_manager=""
+camera=""
 
 [input]
 

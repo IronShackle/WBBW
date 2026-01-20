@@ -65,3 +65,15 @@ text = "Settings"
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Quit"
+
+[node name="BottomRightCorner" type="Control" parent="MarginContainer"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ResetSaveButton" type="Button" parent="MarginContainer/BottomRightCorner"]
+layout_mode = 0
+offset_left = 1423.0
+offset_top = 852.0
+offset_right = 1583.0
+offset_bottom = 883.0
+text = "Reset Save (DEBUG)"

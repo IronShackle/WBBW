@@ -5,9 +5,10 @@ extends Node
 
 signal game_started()
 signal game_paused(paused: bool)
-signal prestige_available(current_bounces: int, threshold: int)
 signal prestige_triggered(new_level: int)
 signal bounce_currency_changed(new_amount: int)
+signal essence_changed(new_amount: int)
+
 
 # Persistent progression
 var prestige_level: int = 0
@@ -16,11 +17,12 @@ var unlocked_upgrades: Array[String] = []
 
 # Current run tracking
 var current_run_bounces: int = 0
-var bounce_threshold: int = 100
 
 # Bounce currency (separate from run bounces)
 var bounce_currency: int = 0
 var bounce_currency_per_bounce: int = 1
+var essence: int = 0
+var essence_per_barrier: int = 1
 
 # Game state
 var is_paused: bool = false
@@ -88,13 +90,8 @@ func register_bounce() -> void:
 	bounce_currency += bounce_currency_per_bounce
 	bounce_currency_changed.emit(bounce_currency)
 	
-	print("[GameManager] Bounce registered! Total: %d / %d, Currency: %d" % 
-		[current_run_bounces, bounce_threshold, bounce_currency])
-	
-	# Check if prestige threshold reached
-	if current_run_bounces >= bounce_threshold:
-		print("[GameManager] Threshold reached! Prestige available")
-		prestige_available.emit(current_run_bounces, bounce_threshold)
+	print("[GameManager] Bounce registered! Run bounces: %d, Currency: %d" % 
+		[current_run_bounces, bounce_currency])
 
 
 ## Prestige system
@@ -102,17 +99,15 @@ func trigger_prestige() -> void:
 	prestige_level += 1
 	total_lifetime_bounces += current_run_bounces
 	
-	# Award prestige points (1 point per 10 bounces)
-	var points = current_run_bounces / 10.0
-	PrestigeManager.add_prestige_points(int(points))
-	
+	# Don't award points here - barriers already did!
 	current_run_bounces = 0
+	bounce_currency = 0
 	
 	save_game()
 	prestige_triggered.emit(prestige_level)
 	
-	print("[GameManager] Prestige! Level: %d, Lifetime Bounces: %d, Points Awarded: %d" % 
-		[prestige_level, total_lifetime_bounces, int(points)])
+	print("[GameManager] Prestige! Level: %d, Lifetime Bounces: %d" % 
+		[prestige_level, total_lifetime_bounces])
 	
 	# Reset barriers
 	var barrier_manager = get_tree().get_first_node_in_group("barrier_manager")
@@ -161,6 +156,10 @@ func load_barrier_save_data(data: Dictionary) -> void:
 		print("[GameManager] Loaded barrier state: tier %d, bounces %d/%d" % 
 			[tier, bounces, required])
 
+func add_essence(amount: int) -> void:
+	essence += amount
+	essence_changed.emit(essence)
+	print("[GameManager] Added %d essence (total: %d)" % [amount, essence])
 
 ## Save/Load
 func save_game() -> void:
@@ -169,6 +168,7 @@ func save_game() -> void:
 		"total_lifetime_bounces": total_lifetime_bounces,
 		"unlocked_upgrades": unlocked_upgrades,
 		"bounce_currency": bounce_currency,
+		"essence": essence,
 		"barrier_data": get_barrier_save_data(),
 		"version": "1.0"
 	}
@@ -199,6 +199,7 @@ func load_game() -> void:
 			prestige_level = save_data.get("prestige_level", 0)
 			total_lifetime_bounces = save_data.get("total_lifetime_bounces", 0)
 			bounce_currency = save_data.get("bounce_currency", 0)
+			essence = save_data.get("essence", 0)
 			
 			# Handle array conversion for typed arrays
 			var loaded_upgrades = save_data.get("unlocked_upgrades", [])
@@ -226,6 +227,7 @@ func reset_save() -> void:
 	unlocked_upgrades.clear()
 	current_run_bounces = 0
 	bounce_currency = 0
+	essence = 0
 	
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)

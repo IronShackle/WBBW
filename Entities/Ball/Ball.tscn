@@ -30,3 +30,18 @@ script = ExtResource("3_66s45")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BallDetection"]
 shape = SubResource("CircleShape2D_wpq7s")
+
+[node name="CollisionParticles" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 5
+lifetime = 0.45
+one_shot = true
+explosiveness = 1.0
+lifetime_randomness = 0.73
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 67.04
+initial_velocity_max = 77.34
+linear_accel_min = 47.42
+linear_accel_max = 47.42
+scale_amount_max = 2.0

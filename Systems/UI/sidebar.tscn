@@ -103,3 +103,18 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "PRESTIGE"
+
+[node name="EssenceLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.5, 1, 1)  # Purple color
+theme_override_font_sizes/font_size = 18
+text = "Essence: 0"
+horizontal_alignment = 1
+
+[node name="MaxBallsLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Max Basic Balls: 20"
+horizontal_alignment = 1
