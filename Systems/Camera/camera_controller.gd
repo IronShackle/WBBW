@@ -2,7 +2,7 @@ extends Camera2D
 
 # Shake parameters
 var shake_intensity: float = 0.0
-var shake_decay: float = 15.0
+var shake_decay: float = 10.0
 
 # Zoom parameters
 var target_zoom: Vector2 = Vector2.ONE

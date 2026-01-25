@@ -2,7 +2,7 @@
 class_name BuffComponent
 extends Node
 
-## Manages active buffs on an entity
+## Manages active buffs on an entity and applies stat modifiers
 
 signal buff_added(buff: BaseBuff)
 signal buff_removed(buff: BaseBuff)
@@ -12,12 +12,20 @@ var active_buffs: Array[BaseBuff] = []
 var entity: Node2D
 var config_manager: GameConfigManager
 
+# Temporary stat modifiers from active buffs
+var active_modifiers: Dictionary = {
+	"max_velocity": {"add": 0.0, "multiply": 1.0},
+	"friction_deceleration": {"add": 0.0, "multiply": 1.0},
+	"wall_bounce_damping": {"add": 0.0, "multiply": 1.0},
+	"ball_bounce_restitution": {"add": 0.0, "multiply": 1.0},
+	"durability": {"add": 0.0, "multiply": 1.0},
+}
+
 
 func _ready() -> void:
 	entity = get_parent()
 	add_to_group("buff_component")
 	
-	# Find GameConfigManager
 	await get_tree().process_frame
 	config_manager = get_tree().get_first_node_in_group("game_config_manager")
 	if not config_manager:
@@ -25,8 +33,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Update all active buffs
-	for buff in active_buffs.duplicate():  # Duplicate to avoid modification during iteration
+	for buff in active_buffs.duplicate():
 		buff.tick(delta)
 		
 		if buff.is_expired():
@@ -34,7 +41,6 @@ func _process(delta: float) -> void:
 
 
 func add_buff(buff: BaseBuff) -> void:
-	# Check if buff type already exists
 	var existing = get_buff_by_id(buff.buff_id)
 	
 	if existing:
@@ -42,20 +48,15 @@ func add_buff(buff: BaseBuff) -> void:
 			existing.stack_count += 1
 			existing.refresh_duration()
 			buff_refreshed.emit(existing)
-			print("[BuffComponent] Stacked %s (x%d)" % [buff.display_name, existing.stack_count])
 		else:
 			existing.refresh_duration()
 			buff_refreshed.emit(existing)
-			print("[BuffComponent] Refreshed %s" % buff.display_name)
 		return
 	
-	# Add new buff
 	buff.owner_entity = entity
 	active_buffs.append(buff)
 	buff.apply_effect(entity)
 	buff_added.emit(buff)
-	
-	print("[BuffComponent] Added %s (duration: %.1fs)" % [buff.display_name, buff.duration])
 
 
 func remove_buff(buff: BaseBuff) -> void:
@@ -65,8 +66,6 @@ func remove_buff(buff: BaseBuff) -> void:
 	buff.remove_effect(entity)
 	active_buffs.erase(buff)
 	buff_removed.emit(buff)
-	
-	print("[BuffComponent] Removed %s" % buff.display_name)
 
 
 func get_buff_by_id(buff_id: String) -> BaseBuff:
@@ -85,10 +84,9 @@ func clear_all_buffs() -> void:
 		remove_buff(buff)
 
 
-## Get buff duration from GameConfigManager
 func get_buff_duration(buff_id: String) -> float:
 	if not config_manager:
-		return 10.0  # Fallback
+		return 10.0
 	
 	match buff_id:
 		"speed_boost":
@@ -100,3 +98,30 @@ func get_buff_duration(buff_id: String) -> float:
 		_:
 			push_warning("[BuffComponent] Unknown buff ID for duration lookup: %s" % buff_id)
 			return 10.0
+
+
+func apply_stat_modifiers(base_value: float, stat_name: String) -> float:
+	var modifiers = active_modifiers.get(stat_name, {"add": 0.0, "multiply": 1.0})
+	return (base_value + modifiers["add"]) * modifiers["multiply"]
+
+
+func add_stat_modifier(stat_name: String, flat_add: float = 0.0, multiply: float = 1.0) -> void:
+	if not active_modifiers.has(stat_name):
+		active_modifiers[stat_name] = {"add": 0.0, "multiply": 1.0}
+	
+	active_modifiers[stat_name]["add"] += flat_add
+	active_modifiers[stat_name]["multiply"] *= multiply
+
+
+func remove_stat_modifier(stat_name: String, flat_add: float = 0.0, multiply: float = 1.0) -> void:
+	if not active_modifiers.has(stat_name):
+		return
+	
+	active_modifiers[stat_name]["add"] -= flat_add
+	if multiply != 1.0:
+		active_modifiers[stat_name]["multiply"] /= multiply
+
+
+func clear_all_modifiers() -> void:
+	for stat in active_modifiers.keys():
+		active_modifiers[stat] = {"add": 0.0, "multiply": 1.0}

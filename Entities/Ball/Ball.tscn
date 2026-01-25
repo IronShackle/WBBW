@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://322ocwxn2gm2"]
+[gd_scene load_steps=7 format=3 uid="uid://322ocwxn2gm2"]
 
 [ext_resource type="Script" uid="uid://c811rs2mvlf30" path="res://Entities/Ball/basic_ball.gd" id="1_66s45"]
 [ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="2_upugy"]
 [ext_resource type="Script" uid="uid://ck2qri2o01iog" path="res://Systems/Combat/Hitboxes/ball_hurtbox.gd" id="3_66s45"]
+[ext_resource type="Script" uid="uid://dft3feb763ol7" path="res://Systems/Corruption/corruption_component.gd" id="4_upugy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_n07ev"]
 radius = 8.0
@@ -16,6 +17,11 @@ script = ExtResource("1_66s45")
 [node name="BounceComponent" type="Node" parent="."]
 script = ExtResource("2_upugy")
 metadata/_custom_type_script = "uid://dij2cg7iuesif"
+
+[node name="CorruptionComponent" type="Node" parent="."]
+script = ExtResource("4_upugy")
+hits_to_break = 1
+metadata/_custom_type_script = "uid://dft3feb763ol7"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_n07ev")

@@ -13,6 +13,9 @@ extends CanvasLayer
 @onready var prestige_section: VBoxContainer = $PanelContainer/MarginContainer/VBoxContainer/PrestigeSection
 @onready var prestige_points_label: Label = $PanelContainer/MarginContainer/VBoxContainer/PrestigeSection/PrestigePointsLabel
 @onready var prestige_button: Button = $PanelContainer/MarginContainer/VBoxContainer/PrestigeSection/PrestigeButton
+@onready var sacrifice_button: Button = $PanelContainer/MarginContainer/VBoxContainer/SacrificeButton
+
+var sacrifice_unlocked: bool = true
 
 enum Tab { BALLS, UPGRADES }
 var current_tab: Tab = Tab.BALLS
@@ -34,6 +37,9 @@ func _ready() -> void:
 	GameManager.bounce_currency_changed.connect(_on_bounce_currency_changed)
 	GameManager.essence_changed.connect(_on_essence_changed)
 	
+	# Connect sacrifice button
+	sacrifice_button.pressed.connect(_on_sacrifice_pressed)
+
 	# Connect to PrestigeManager
 	PrestigeManager.prestige_points_changed.connect(_on_prestige_points_changed)
 	
@@ -284,7 +290,32 @@ func _update_ball_button_states() -> void:
 		else:
 			# For special balls, can_spawn already checks essence and basic ball count
 			button.disabled = not can_spawn
+	_update_sacrifice_button()
 
+
+func _update_sacrifice_button() -> void:
+	if not spawn_manager or not spawn_manager.config_manager:
+		sacrifice_button.visible = false
+		return
+	
+	sacrifice_button.visible = sacrifice_unlocked
+	
+	if sacrifice_unlocked:
+		var basic_count = spawn_manager._count_balls_of_type("basic")
+		var has_enough_balls = basic_count >= spawn_manager.sacrifice_ball_cost
+		var has_enough_essence = GameManager.essence >= spawn_manager.sacrifice_essence_cost
+		
+		sacrifice_button.disabled = not (has_enough_balls and has_enough_essence)
+		
+		sacrifice_button.text = "Sacrifice\n%d Balls + %d Essence\n(+%d Max)" % [
+			spawn_manager.sacrifice_ball_cost,
+			spawn_manager.sacrifice_essence_cost,
+			spawn_manager.sacrifice_max_ball_increase
+		]
+
+func _on_sacrifice_pressed() -> void:
+	if spawn_manager:
+		spawn_manager.sacrifice_basic_balls()
 
 func _update_prestige_display() -> void:
 	# Show prestige button if player has ANY prestige points to spend

@@ -32,6 +32,7 @@ physics_manager=""
 spawn_manager=""
 game_config_manager=""
 camera=""
+barrier_manager=""
 
 [input]
 

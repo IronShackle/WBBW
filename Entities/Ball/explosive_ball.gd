@@ -16,9 +16,6 @@ var is_exploding: bool = false
 
 
 func _ready() -> void:
-	ball_type = "explosive"
-	ball_color = charge_color_start
-	ball_radius = 10.0
 	
 	super._ready()
 	

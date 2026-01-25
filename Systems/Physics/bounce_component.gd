@@ -2,25 +2,15 @@
 extends Node
 class_name BounceComponent
 
-## Handles velocity-based knockback and wall bouncing with per-ball physics overrides
+## Handles velocity-based knockback and wall bouncing reading physics stats from parent ball
 
 signal bounced(collision: KinematicCollision2D)
-signal wall_hit(wall: Node)
-signal barrier_hit(barrier: Node)
 signal ball_hit(other_ball: Node2D)
 
 var body: CharacterBody2D
 var detection_area: Area2D
 var knockback_velocity: Vector2 = Vector2.ZERO
 var bounce_count: int = 0
-var physics_manager: PhysicsManager
-
-# Physics overrides (-1 = use PhysicsManager default)
-var friction_override: float = -1.0
-var wall_bounce_damping_override: float = -1.0
-var ball_bounce_restitution_override: float = -1.0
-var ball_collision_kickback_override: float = -1.0
-var max_bounce_speed_override: float = -1.0
 
 # Debounce tracking
 var last_bounce_time: float = 0.0
@@ -36,10 +26,6 @@ func _ready() -> void:
 	body = get_parent() as CharacterBody2D
 	if not body:
 		push_error("BounceComponent must be child of CharacterBody2D")
-	
-	physics_manager = get_tree().get_first_node_in_group("physics_manager")
-	if not physics_manager:
-		push_warning("BounceComponent: No PhysicsManager found in scene")
 	
 	_setup_detection_area()
 
@@ -84,9 +70,6 @@ func _on_ball_body_entered(other_body: Node2D) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not physics_manager:
-		return
-	
 	# Update cooldown timers
 	if last_bounce_time > 0.0:
 		last_bounce_time -= delta
@@ -105,11 +88,6 @@ func _physics_process(delta: float) -> void:
 		_handle_ball_collision(other_ball)
 	pending_ball_collisions.clear()
 	
-	# Stop if below minimum velocity
-	if knockback_velocity.length() < physics_manager.min_bounce_velocity:
-		knockback_velocity = Vector2.ZERO
-		return
-	
 	# 2. THEN: Set velocity and move
 	body.velocity = knockback_velocity
 	body.move_and_slide()
@@ -119,12 +97,8 @@ func _physics_process(delta: float) -> void:
 		var collision = body.get_slide_collision(0)
 		var collider = collision.get_collider()
 		
-		if collider.is_in_group("wall"):
+		if collider.is_in_group("wall") or collider.is_in_group("barrier"):
 			_handle_wall_bounce(collision)
-			wall_hit.emit(collider)
-		elif collider.is_in_group("barrier"):
-			_handle_barrier_hit(collision)
-			barrier_hit.emit(collider)
 	
 	# 4. Apply friction
 	knockback_velocity = knockback_velocity.move_toward(
@@ -136,7 +110,7 @@ func _physics_process(delta: float) -> void:
 func apply_knockback(direction: Vector2, force: float) -> void:
 	knockback_velocity = direction.normalized() * force
 	
-	var max_speed = get_max_bounce_speed()
+	var max_speed = get_max_velocity()
 	if knockback_velocity.length() > max_speed:
 		knockback_velocity = knockback_velocity.normalized() * max_speed
 	
@@ -194,11 +168,18 @@ func _handle_ball_collision(other_body: Node2D) -> void:
 	
 	ball_hit.emit(other_body)
 
+	# If THIS ball is the player, check if other ball has corruption component
+	if body.is_in_group("player"):
+		var corruption_comp = other_body.get_node_or_null("CorruptionComponent")
+		if corruption_comp:
+			corruption_comp.register_player_hit()
+	
+	# Check if corruption should happen to the other ball
+	var corruption_controller = get_tree().get_first_node_in_group("corruption_controller")
+	if corruption_controller:
+		corruption_controller.try_corrupt_ball(other_body)
 
 func _handle_wall_bounce(collision: KinematicCollision2D) -> void:
-	if not physics_manager:
-		return
-	
 	var normal = collision.get_normal()
 	
 	knockback_velocity = knockback_velocity.bounce(normal) * get_wall_bounce_damping()
@@ -211,46 +192,40 @@ func _handle_wall_bounce(collision: KinematicCollision2D) -> void:
 	GameManager.register_bounce()
 
 
-func _handle_barrier_hit(collision: KinematicCollision2D) -> void:
-	_handle_wall_bounce(collision)
-
-
 func get_velocity() -> Vector2:
 	return knockback_velocity
 
 
 func is_moving() -> bool:
-	if not physics_manager:
-		return knockback_velocity.length() > 50.0
-	return knockback_velocity.length() > physics_manager.min_bounce_velocity
+	return knockback_velocity.length() > 50.0
 
 
-## Physics override getters
+## Physics stat getters - read from parent ball's computed properties
 func get_friction_deceleration() -> float:
-	if friction_override >= 0.0:
-		return friction_override
-	return physics_manager.friction_deceleration if physics_manager else 100.0
+	if body and body is BaseBall:
+		return body.friction_deceleration
+	return 100.0
 
 
 func get_wall_bounce_damping() -> float:
-	if wall_bounce_damping_override >= 0.0:
-		return wall_bounce_damping_override
-	return physics_manager.wall_bounce_damping if physics_manager else 0.8
+	if body and body is BaseBall:
+		return body.wall_bounce_damping
+	return 0.8
 
 
 func get_ball_bounce_restitution() -> float:
-	if ball_bounce_restitution_override >= 0.0:
-		return ball_bounce_restitution_override
-	return physics_manager.ball_bounce_restitution if physics_manager else 1.1
+	if body and body is BaseBall:
+		return body.ball_bounce_restitution
+	return 1.1
 
 
 func get_ball_collision_kickback() -> float:
-	if ball_collision_kickback_override >= 0.0:
-		return ball_collision_kickback_override
-	return physics_manager.ball_collision_kickback if physics_manager else 0.2
+	# This stat doesn't exist on BaseBall yet - using default
+	# TODO: Add to BaseBall stat system if needed
+	return 0.2
 
 
-func get_max_bounce_speed() -> float:
-	if max_bounce_speed_override >= 0.0:
-		return max_bounce_speed_override
-	return physics_manager.max_bounce_speed if physics_manager else 1000.0
+func get_max_velocity() -> float:
+	if body and body is BaseBall:
+		return body.max_velocity
+	return 1000.0

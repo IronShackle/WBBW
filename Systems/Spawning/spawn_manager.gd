@@ -26,6 +26,11 @@ var config_manager: GameConfigManager
 # Pickup spawn timer
 var pickup_check_timer: float = 0.0
 
+@export_group("Sacrifice")
+@export var sacrifice_ball_cost: int = 5
+@export var sacrifice_essence_cost: int = 5
+@export var sacrifice_max_ball_increase: int = 5
+
 
 func _ready() -> void:
 	add_to_group("spawn_manager")
@@ -385,3 +390,123 @@ func enable_pickup_spawning() -> void:
 func disable_pickup_spawning() -> void:
 	pickup_spawning_enabled = false
 	print("[SpawnManager] Pickup spawning disabled")
+
+
+# Update these functions in spawn_manager.gd
+
+## Sacrifice balls for permanent upgrades
+func sacrifice_basic_balls() -> bool:
+	if not config_manager:
+		push_warning("No GameConfigManager available")
+		return false
+	
+	_clean_dead_balls()
+	
+	# Check if we have enough basic balls
+	var basic_count = _count_balls_of_type("basic")
+	if basic_count < sacrifice_ball_cost:
+		print("[SpawnManager] Not enough basic balls to sacrifice (%d / %d)" % [basic_count, sacrifice_ball_cost])
+		return false
+	
+	# Check if we have enough essence
+	if GameManager.essence < sacrifice_essence_cost:
+		print("[SpawnManager] Not enough essence to sacrifice (%d / %d)" % [GameManager.essence, sacrifice_essence_cost])
+		return false
+	
+	# Deduct essence
+	GameManager.essence -= sacrifice_essence_cost
+	GameManager.essence_changed.emit(GameManager.essence)
+	
+	# Sacrifice the required number of basic balls with particle effect
+	var sacrificed_count = await _sacrifice_basic_balls_particles(sacrifice_ball_cost)
+	balls_sacrificed.emit(sacrificed_count)
+	
+	# Increase max basic balls
+	var old_max = config_manager.max_basic_balls
+	config_manager.base_max_basic_balls += sacrifice_max_ball_increase
+	var new_max = config_manager.max_basic_balls
+	print("[SpawnManager] Sacrificed %d balls + %d essence - Max basic balls: %d -> %d" % 
+		[sacrificed_count, sacrifice_essence_cost, old_max, new_max])
+	
+	# Trigger sidebar animation
+	await get_tree().create_timer(0.7).timeout
+	var sidebar = get_tree().get_first_node_in_group("sidebar")
+	if sidebar and sidebar.has_method("animate_max_balls_increase"):
+		sidebar.animate_max_balls_increase(old_max, new_max)
+	
+	return true
+
+
+## Sacrifice a specific number of basic balls with particle effects
+func _sacrifice_basic_balls_particles(count: int) -> int:
+	var basic_balls_to_sacrifice: Array[BaseBall] = []
+	
+	# Collect the required number of basic balls
+	for ball in active_balls:
+		if ball.ball_type == "basic" and basic_balls_to_sacrifice.size() < count:
+			basic_balls_to_sacrifice.append(ball)
+	
+	var sacrifice_count = basic_balls_to_sacrifice.size()
+	
+	# Animate each ball with particles
+	for ball in basic_balls_to_sacrifice:
+		_sacrifice_ball_with_particles(ball)
+		active_balls.erase(ball)
+	
+	# Wait for animations to complete
+	if sacrifice_count > 0:
+		await get_tree().create_timer(1.0).timeout
+	
+	print("[SpawnManager] Sacrificed %d basic balls with particles" % sacrifice_count)
+	return sacrifice_count
+
+
+func _sacrifice_ball_with_particles(ball: BaseBall) -> void:
+	var particles = CPUParticles2D.new()
+	particles.global_position = ball.global_position
+	
+	# Particle settings
+	particles.amount = 20
+	particles.lifetime = 1.0
+	particles.explosiveness = 0.8
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	particles.emission_sphere_radius = 10.0
+	particles.initial_velocity_min = 50.0
+	particles.initial_velocity_max = 100.0
+	particles.color = ball.modulate
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 4.0
+	
+	# Add to scene
+	get_tree().current_scene.add_child(particles)
+	particles.emitting = true
+	
+	# Track player ball
+	_track_particles_to_player(particles)
+	
+	# Fade out the ball
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ball, "scale", Vector2.ZERO, 0.5)
+	tween.tween_property(ball, "modulate:a", 0.0, 0.5)
+	tween.finished.connect(ball.queue_free)
+
+
+func _track_particles_to_player(particles: CPUParticles2D) -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	if not player:
+		return
+	
+	var timer = 0.0
+	var track_duration = 1.0
+	
+	while timer < track_duration and is_instance_valid(particles):
+		await get_tree().process_frame
+		timer += get_process_delta_time()
+		
+		if is_instance_valid(player):
+			var direction = (player.global_position - particles.global_position).normalized()
+			particles.gravity = direction * 500
+	
+	if is_instance_valid(particles):
+		particles.queue_free()

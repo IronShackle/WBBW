@@ -53,6 +53,15 @@ func start_game() -> void:
 	current_run_bounces = 0
 	in_game = true
 	get_tree().change_scene_to_file("res://Scenes/Game/Game.tscn")
+	
+	# Wait for scene to load, then restore barrier state
+	await get_tree().process_frame
+	await get_tree().process_frame  # Extra frame to be safe
+	
+	var barrier_data = get("_pending_barrier_data")  # We'll store this
+	if barrier_data and not barrier_data.is_empty():
+		load_barrier_save_data(barrier_data)
+	
 	game_started.emit()
 
 
@@ -90,8 +99,8 @@ func register_bounce() -> void:
 	bounce_currency += bounce_currency_per_bounce
 	bounce_currency_changed.emit(bounce_currency)
 	
-	print("[GameManager] Bounce registered! Run bounces: %d, Currency: %d" % 
-		[current_run_bounces, bounce_currency])
+	#print("[GameManager] Bounce registered! Run bounces: %d, Currency: %d" % 
+		#[current_run_bounces, bounce_currency])
 
 
 ## Prestige system
@@ -136,8 +145,10 @@ func get_barrier_save_data() -> Dictionary:
 
 
 func load_barrier_save_data(data: Dictionary) -> void:
+	print("[GameManager] Loading barrier data: %s" % data)
 	var barrier_manager = get_tree().get_first_node_in_group("barrier_manager")
 	if barrier_manager and data:
+		print("[GameManager] Found barrier_manager, setting tier to %d" % data.get("current_tier", 0))
 		var tier = data.get("current_tier", 0)
 		var bounces = data.get("barrier_bounces", 0)
 		
@@ -208,10 +219,10 @@ func load_game() -> void:
 				if upgrade is String:
 					unlocked_upgrades.append(upgrade)
 			
-			# Load barrier state (deferred to ensure BarrierManager is ready)
+			# Store barrier data for later loading (after scene loads)
 			var barrier_data = save_data.get("barrier_data", {})
 			if not barrier_data.is_empty():
-				call_deferred("load_barrier_save_data", barrier_data)
+				set("_pending_barrier_data", barrier_data)
 			
 			print("[GameManager] Game loaded - Prestige: %d, Lifetime Bounces: %d, Currency: %d" % 
 				[prestige_level, total_lifetime_bounces, bounce_currency])

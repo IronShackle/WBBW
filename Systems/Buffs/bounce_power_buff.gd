@@ -13,27 +13,25 @@ func _init() -> void:
 
 
 func apply_effect(entity: Node2D) -> void:
-	var bounce_component = entity.get_node_or_null("BounceComponent")
-	if not bounce_component:
-		return
-	
-	var physics_manager = bounce_component.physics_manager
-	if not physics_manager:
+	var buff_component = entity.get_node_or_null("BuffComponent")
+	if not buff_component:
 		return
 	
 	# Read bounce_multiplier from config parameters (default 1.5 for 50% more bouncy)
 	var multiplier = config.parameters.get("bounce_multiplier", 1.5) if config else 1.5
 	
-	# Apply restitution increase
-	var base_restitution = physics_manager.ball_bounce_restitution
-	bounce_component.ball_bounce_restitution_override = base_restitution * multiplier
+	# Add multiplicative modifier to ball_bounce_restitution
+	buff_component.add_stat_modifier("ball_bounce_restitution", 0.0, multiplier)
 	
-	print("[BouncePowerBuff] Applied - restitution: %.2f -> %.2f (x%.2f)" % 
-		[base_restitution, bounce_component.ball_bounce_restitution_override, multiplier])
+	print("[BouncePowerBuff] Applied - ball_bounce_restitution multiplier: x%.2f" % multiplier)
 
 
 func remove_effect(entity: Node2D) -> void:
-	var bounce_component = entity.get_node_or_null("BounceComponent")
-	if bounce_component:
-		bounce_component.ball_bounce_restitution_override = -1.0  # Reset to default
-		print("[BouncePowerBuff] Removed - restitution restored to default")
+	var buff_component = entity.get_node_or_null("BuffComponent")
+	if not buff_component:
+		return
+	
+	var multiplier = config.parameters.get("bounce_multiplier", 1.5) if config else 1.5
+	buff_component.remove_stat_modifier("ball_bounce_restitution", 0.0, multiplier)
+	
+	print("[BouncePowerBuff] Removed - ball_bounce_restitution modifier cleared")

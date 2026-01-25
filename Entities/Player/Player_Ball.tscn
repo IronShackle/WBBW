@@ -15,6 +15,10 @@ radius = 8.0
 collision_layer = 3
 motion_mode = 1
 script = ExtResource("1_8we1c")
+trail_length = 200
+trail_color = Color(1, 1, 1, 1)
+trail_width = 50.0
+max_velocity_multiplier = 1.5
 
 [node name="BounceComponent" type="Node" parent="."]
 script = ExtResource("2_td4tu")

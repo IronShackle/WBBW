@@ -4,7 +4,7 @@ extends Node
 
 ## Manages barrier layers and progression
 
-signal barrier_broken(tier: int, prestige_awarded: int)
+signal barrier_broken(tier: int)
 signal barrier_damage_changed(current: int, required: int)
 
 # Barrier configuration
@@ -15,9 +15,6 @@ signal barrier_damage_changed(current: int, required: int)
 
 # Shader for damage visualization
 var damage_shader: Shader
-
-# Prestige rewards per tier (can be tuned in inspector)
-@export var prestige_rewards: Array[int] = [10, 15, 20, 30, 50, 75, 100, 150, 200, 300]
 
 # Bounce requirements per tier (can be tuned in inspector)
 @export var bounce_requirements: Array[int] = [
@@ -58,6 +55,7 @@ var current_barrier_tier: int = 0  # 0 = innermost
 var barrier_bounces: int = 0
 
 
+# In BarrierManager - replace _ready():
 func _ready() -> void:
 	add_to_group("barrier_manager")
 	
@@ -67,26 +65,44 @@ func _ready() -> void:
 	# Connect to GameManager
 	GameManager.bounce_currency_changed.connect(_on_bounce_registered)
 	
-	# Create barriers
+	# Wait for GameManager to load, then initialize
+	call_deferred("_initialize_barriers")
+
+
+# New function in BarrierManager:
+func _initialize_barriers() -> void:
+	# GameManager has loaded saved state by now
+	# Create barriers based on current_barrier_tier
+	#print("[BarrierManager] Initializing barriers at tier %d" % current_barrier_tier)
 	_create_barriers()
-	
-	# Load saved state if available
-	_load_barrier_state()
-	
-	# Set initial camera zoom for current tier
+	#print("[BarrierManager] Created %d barrier layers" % barriers.size())
+	# Set camera zoom for current tier
 	var camera = get_tree().get_first_node_in_group("camera")
 	if camera and current_barrier_tier < barrier_zoom_levels.size():
 		camera.set_initial_zoom(barrier_zoom_levels[current_barrier_tier])
+	
+	# Update damage shader if we're mid-barrier
+	if barrier_bounces > 0 and current_barrier_tier < barriers.size():
+		var required = get_current_barrier_requirement()
+		var damage_percent = float(barrier_bounces) / float(required)
+		_update_barrier_damage_visual(damage_percent)
+	
+	# Update UI with current state
+	if current_barrier_tier < barriers.size():
+		var required = get_current_barrier_requirement()
+		barrier_damage_changed.emit(barrier_bounces, required)
 
 
+# Replace _create_barriers():
 func _create_barriers() -> void:
-	# Use hardcoded scene center
 	var center = Vector2.ZERO
 	
-	for i in range(starting_barriers):
+	# Only create barriers from current_barrier_tier onward (skip broken ones)
+	for i in range(current_barrier_tier, starting_barriers):
 		var barrier = _create_barrier_layer(i, center)
 		barriers.append(barrier)
 		add_child(barrier)
+
 
 
 func _create_barrier_layer(tier: int, center: Vector2) -> Node2D:
@@ -196,7 +212,7 @@ func _update_barrier_damage_visual(damage_percent: float) -> void:
 	if current_barrier_tier >= barriers.size():
 		return
 	
-	print("[BarrierManager] Updating damage visual: %.2f" % damage_percent)
+	#print("[BarrierManager] Updating damage visual: %.2f" % damage_percent)
 	
 	var barrier = barriers[current_barrier_tier]
 	if not is_instance_valid(barrier):
@@ -223,12 +239,12 @@ func _update_barrier_damage_visual(damage_percent: float) -> void:
 	# Trigger camera shake at damage thresholds
 	var camera = get_tree().get_first_node_in_group("camera")
 	if camera:
-		if damage_percent >= 0.95 and damage_percent < 0.96:  # Just crossed 90%
-			camera.shake_screen(6.0)  # Heavy shake
-		elif damage_percent >= 0.9 and damage_percent < 0.91:  # Just crossed 80%
-			camera.shake_screen(4.0)  # Medium shake
-		elif damage_percent >= 0.75 and damage_percent < 0.76:  # Just crossed 70%
-			camera.shake_screen(2.0)   # Light shake
+		if damage_percent >= 0.95 and damage_percent < 0.96: 
+			camera.shake_screen(8.0)  # Heavy shake
+		elif damage_percent >= 0.9 and damage_percent < 0.91:  
+			camera.shake_screen(5.0)  # Medium shake
+		elif damage_percent >= 0.75 and damage_percent < 0.76: 
+			camera.shake_screen(3.0)   # Light shake
 
 
 func _break_current_barrier() -> void:
@@ -246,15 +262,6 @@ func _break_current_barrier() -> void:
 	var breaking_tier = current_barrier_tier
 	current_barrier_tier += 1
 	barrier_bounces = 0
-	
-	# Get prestige reward
-	var prestige = get_barrier_prestige_reward(breaking_tier)
-	
-	# Award prestige points
-	GameManager.add_prestige_points(prestige)
-	
-	print("[BarrierManager] Barrier %d broken! Awarded %d prestige points and %d essence pickups" % 
-		[breaking_tier, prestige, essence_pickups_per_barrier])
 	
 	# Get wall references
 	var walls = [
@@ -288,7 +295,7 @@ func _break_current_barrier() -> void:
 		barrier.queue_free()
 	
 	# Emit signal
-	barrier_broken.emit(breaking_tier, prestige)
+	barrier_broken.emit(breaking_tier)
 	
 	# Update UI
 	if current_barrier_tier < barriers.size():
@@ -357,7 +364,7 @@ func _spawn_essence_from_walls(walls: Array) -> void:
 		
 		get_tree().current_scene.add_child(essence)
 		
-		print("[BarrierManager] Spawned essence in %s wall at %s" % [wall_name, essence.global_position])
+		#print("[BarrierManager] Spawned essence in %s wall at %s" % [wall_name, essence.global_position])
 
 
 func get_current_barrier_requirement() -> int:
@@ -365,11 +372,6 @@ func get_current_barrier_requirement() -> int:
 		return 999999  # Fallback for tiers beyond config
 	return bounce_requirements[current_barrier_tier]
 
-
-func get_barrier_prestige_reward(tier: int) -> int:
-	if tier >= prestige_rewards.size():
-		return 100  # Fallback
-	return prestige_rewards[tier]
 
 
 ## Get the current play area size (size of innermost unbroken barrier)

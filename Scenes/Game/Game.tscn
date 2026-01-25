@@ -1,6 +1,6 @@
-[gd_scene load_steps=15 format=3 uid="uid://cflssia5voc6d"]
+[gd_scene load_steps=16 format=3 uid="uid://cflssia5voc6d"]
 
-[ext_resource type="Script" uid="uid://c0lewos4h5yf2" path="res://Systems/Physics/physics_manager.gd" id="1_jxerj"]
+[ext_resource type="Script" uid="uid://dffoost8qvnn1" path="res://Systems/Round/round_manager.gd" id="1_fg52j"]
 [ext_resource type="Script" uid="uid://cey2np8cbtlkk" path="res://Systems/Spawning/spawn_manager.gd" id="2_gvja8"]
 [ext_resource type="PackedScene" uid="uid://cmtvkdymkyq2q" path="res://Entities/Player/Player_Ball.tscn" id="3_fuqhk"]
 [ext_resource type="Script" uid="uid://8upkourbo6nd" path="res://Systems/Spawning/ball_config.gd" id="3_m1o7v"]
@@ -14,13 +14,13 @@
 [ext_resource type="Resource" uid="uid://cl1n421pjsrje" path="res://Data/PickupConfigs/bounce_power_pickup_config.tres" id="8_edkrd"]
 [ext_resource type="PackedScene" uid="uid://dmgsmls47pyd4" path="res://Entities/Pickup/essence_pickup.tscn" id="10_bsqcq"]
 [ext_resource type="Script" uid="uid://ca3onv77bj0n1" path="res://Systems/Camera/camera_controller.gd" id="11_bsqcq"]
+[ext_resource type="Script" uid="uid://cqwkjmiapf44q" path="res://Systems/Corruption/corruption_controller.gd" id="11_jf0ra"]
 
 [node name="Game" type="Node2D"]
 
-[node name="PhysicsManager" type="Node" parent="." groups=["physics_manager"]]
-script = ExtResource("1_jxerj")
-min_bounce_velocity = 0.0
-max_bounce_speed = 800.0
+[node name="RoundManager" type="Node" parent="."]
+script = ExtResource("1_fg52j")
+metadata/_custom_type_script = "uid://dffoost8qvnn1"
 
 [node name="SpawnManager" type="Node" parent="." groups=["spawn_manager"]]
 script = ExtResource("2_gvja8")
@@ -29,19 +29,26 @@ spawnable_pickups = Array[ExtResource("6_ti1oi")]([ExtResource("8_edkrd")])
 pickup_spawning_enabled = true
 metadata/_custom_type_script = "uid://cey2np8cbtlkk"
 
-[node name="BarrierManager" type="Node" parent="."]
+[node name="BarrierManager" type="Node" parent="." groups=["barrier_manager"]]
 script = ExtResource("6_m1o7v")
 starting_barriers = 50
 barrier_thickness = 25.0
 initial_play_area_size = Vector2(250, 250)
-bounce_requirements = Array[int]([50, 10, 20, 20, 20, 1000, 1500, 2000, 3000, 5000])
+bounce_requirements = Array[int]([20, 50, 100, 150, 200, 1250, 1500, 2000, 3000, 5000])
 barrier_zoom_levels = Array[float]([3.0, 2.0, 1.8, 1.5, 1.5, 1.25, 1.1, 1.0, 1.0, 1.0])
 essence_pickup_scene = ExtResource("10_bsqcq")
 
 [node name="GameConfigManager" type="Node" parent="." groups=["game_config_manager"]]
 script = ExtResource("7_3586x")
 base_max_basic_balls = 10
+base_max_total_balls = 999
+special_ball_max_increase = 100
 metadata/_custom_type_script = "uid://ieqmvtwoqr0a"
+
+[node name="CorruptionController" type="Node" parent="."]
+script = ExtResource("11_jf0ra")
+base_corruption_chance = 1.0
+metadata/_custom_type_script = "uid://cqwkjmiapf44q"
 
 [node name="Camera2D" type="Camera2D" parent="." groups=["camera"]]
 script = ExtResource("11_bsqcq")
@@ -52,4 +59,11 @@ visible = false
 [node name="Sidebar" parent="." instance=ExtResource("7_1q8bt")]
 
 [node name="CharacterBody2D" parent="." instance=ExtResource("3_fuqhk")]
-force_multiplier = 30.0
+force_multiplier = 5.0
+launched_grace_period = 0.4
+trail_length = 5
+trail_color = Color(1, 1, 1, 0.7764706)
+trail_width = 5.0
+max_velocity_multiplier = 1.0
+
+[node name="PlayerLaunchTrail" type="Line2D" parent="."]

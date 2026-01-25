@@ -24,6 +24,15 @@ extends Node
 @export var base_bounce_power_duration: float = 10.0
 @export var base_size_boost_duration: float = 12.0
 
+# Permanent modifiers structure
+var permanent_modifiers: Dictionary = {
+	"max_velocity": {"add": 0.0, "multiply": 1.0},
+	"friction_deceleration": {"add": 0.0, "multiply": 1.0},
+	"wall_bounce_damping": {"add": 0.0, "multiply": 1.0},
+	"ball_bounce_restitution": {"add": 0.0, "multiply": 1.0},
+	"durability": {"add": 0.0, "multiply": 1.0},
+}
+
 # Computed properties with prestige modifiers applied
 var max_basic_balls: int:
 	get:
@@ -69,3 +78,29 @@ var size_boost_duration: float:
 func _ready() -> void:
 	add_to_group("game_config_manager")
 	print("[GameConfigManager] Initialized with prestige modifiers applied")
+
+func apply_stat_modifiers(base_value: float, stat_name: String) -> float:
+	var modifiers = permanent_modifiers.get(stat_name, {"add": 0.0, "multiply": 1.0})
+	return (base_value + modifiers["add"]) * modifiers["multiply"]
+
+
+func add_flat_modifier(stat_name: String, amount: float) -> void:
+	if not permanent_modifiers.has(stat_name):
+		permanent_modifiers[stat_name] = {"add": 0.0, "multiply": 1.0}
+	
+	permanent_modifiers[stat_name]["add"] += amount
+	print("[GameConfigManager] Added +%.1f to %s" % [amount, stat_name])
+
+
+func add_multiplicative_modifier(stat_name: String, multiplier: float) -> void:
+	if not permanent_modifiers.has(stat_name):
+		permanent_modifiers[stat_name] = {"add": 0.0, "multiply": 1.0}
+	
+	permanent_modifiers[stat_name]["multiply"] *= multiplier
+	print("[GameConfigManager] Applied x%.2f to %s" % [multiplier, stat_name])
+
+
+func reset_permanent_modifiers() -> void:
+	for stat in permanent_modifiers.keys():
+		permanent_modifiers[stat] = {"add": 0.0, "multiply": 1.0}
+	print("[GameConfigManager] Reset all permanent modifiers")
