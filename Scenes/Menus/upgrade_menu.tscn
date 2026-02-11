@@ -1,19 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://b33miyp77akwh"]
+[gd_scene load_steps=2 format=3 uid="uid://b33miyp77akwh"]
 
-[ext_resource type="Script" uid="uid://dswlaav4a5fh8" path="res://Scenes/Menus/prestige_tree_ui.gd" id="1_15sdu"]
-[ext_resource type="PackedScene" uid="uid://beg8pi5xh6ipb" path="res://Systems/UI/pause_menu.tscn" id="2_oovkt"]
+[ext_resource type="Script" uid="uid://dswlaav4a5fh8" path="res://Scenes/Menus/upgrade_tree_ui.gd" id="1_cf6ug"]
 
-[node name="PrestigeTreeUI" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("1_15sdu")
+[node name="UpgradeMenu" type="CanvasLayer"]
+script = ExtResource("1_cf6ug")
 
 [node name="Background" type="ColorRect" parent="."]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -22,7 +14,7 @@ grow_vertical = 2
 color = Color(0.30371025, 0.30235744, 0.34438694, 1)
 
 [node name="PannableCanvas" type="Control" parent="."]
-layout_mode = 1
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -57,7 +49,6 @@ offset_bottom = 540.0
 text = "START"
 
 [node name="BottomBar" type="PanelContainer" parent="."]
-layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -77,6 +68,7 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 
 [node name="ContinueButton" type="Button" parent="BottomBar/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
@@ -86,7 +78,24 @@ text = "Continue Game"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PointsLabel" type="Label" parent="BottomBar/MarginContainer/HBoxContainer"]
+[node name="CurrencyLabel" type="Label" parent="BottomBar/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Points: 0 / 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EssenceLabel" type="Label" parent="BottomBar/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Points: 0 / 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CorruptionLabel" type="Label" parent="BottomBar/MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Points: 0 / 0"
@@ -96,5 +105,3 @@ vertical_alignment = 1
 [node name="RightSpacer" type="Control" parent="BottomBar/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="PauseMenu" parent="." instance=ExtResource("2_oovkt")]

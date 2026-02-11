@@ -11,6 +11,8 @@ extends BaseBall
 @export var launch_cooldown: float = 0.5
 @export var launched_grace_period: float = 0.2
 
+@onready var visual: Polygon2D = $Polygon2D
+@export var slingshot_pull_distance: float = 15.0  # How far to pull back visually
 @export_group("Trail Settings")
 @export var trail_length: int = 20
 @export var trail_color: Color = Color(1.0, 0.8, 0.0, 0.7)
@@ -91,7 +93,16 @@ func _handle_idle(delta: float) -> void:
 
 
 func _handle_charging(delta: float) -> void:
-	pass
+	# Calculate slingshot pull
+	var mouse_pos = get_global_mouse_position()
+	var drag_vector = drag_start_position - mouse_pos
+	
+	if drag_vector.length() > max_drag_distance:
+		drag_vector = drag_vector.normalized() * max_drag_distance
+	
+	# Pull visual back opposite to launch direction
+	var pull_percent = drag_vector.length() / max_drag_distance
+	visual.position = -drag_vector.normalized() * slingshot_pull_distance * pull_percent
 
 
 func _handle_launched(delta: float) -> void:
@@ -107,7 +118,7 @@ func _handle_rolling(delta: float) -> void:
 func _transition_to(new_state: int) -> void:
 	match current_state:
 		State.CHARGING:
-			pass
+			visual.position = Vector2.ZERO  # Reset visual offset
 		State.LAUNCHED:
 			has_bounced_since_launch = false
 	
@@ -119,6 +130,9 @@ func _transition_to(new_state: int) -> void:
 			pass
 		State.CHARGING:
 			drag_start_position = get_global_mouse_position()
+			# Stop all movement when charging
+			if bounce_component:
+				bounce_component.knockback_velocity = Vector2.ZERO
 		State.LAUNCHED:
 			has_bounced_since_launch = false
 		State.ROLLING:

@@ -25,6 +25,10 @@ extends CharacterBody2D
 @export var is_breakable: bool = true
 @export var base_max_durability: int = 20
 
+# Currency reward
+@export_group("Currency")
+@export var base_currency_value: int = 10
+
 var current_durability: int = 0
 var ball_type: String = "base"
 
@@ -66,6 +70,8 @@ var max_velocity: float:
 		
 		return base
 
+func _draw() -> void:
+	draw_circle(Vector2.ZERO, ball_radius, ball_color)
 
 var friction_deceleration: float:
 	get:
@@ -126,7 +132,7 @@ func _setup_ball() -> void:
 
 ## Virtual method - override for custom collision behavior
 func _on_ball_collision(other_ball: BaseBall) -> void:
-	pass
+	_reduce_durability()
 
 
 ## Virtual method - override for custom wall bounce behavior
@@ -135,8 +141,20 @@ func _on_wall_bounce(wall: Node2D) -> void:
 
 
 func _apply_visual_properties() -> void:
+	queue_redraw()
+	_update_collision_shapes()
 	modulate = ball_color
 
+func _update_collision_shapes() -> void:
+	# Physics collision shape
+	var physics_shape = get_node_or_null("CollisionShape2D")
+	if physics_shape and physics_shape.shape is CircleShape2D:
+		physics_shape.shape.radius = ball_radius
+	
+	# BallDetection collision shape
+	var detection_shape = get_node_or_null("BallDetection/CollisionShape2D")
+	if detection_shape and detection_shape.shape is CircleShape2D:
+		detection_shape.shape.radius = ball_radius
 
 func _on_bounced(collision: KinematicCollision2D) -> void:
 	_reduce_durability()
@@ -153,6 +171,17 @@ func _reduce_durability() -> void:
 
 
 func _explode() -> void:
-	print("[BaseBall] Ball exploded! Respawning...")
-	# TODO: Respawn logic / visual effects
+	# Spawn explosion particles
+	var particles = get_node_or_null("ExplosionParticles")
+	if particles:
+		# Reparent to scene so particles persist after ball is freed
+		var explosion = particles.duplicate()
+		get_tree().current_scene.add_child(explosion)
+		explosion.global_position = global_position
+		explosion.emitting = true
+		explosion.finished.connect(explosion.queue_free)
+	
+	# Award currency before destroying
+	GameManager.add_currency(base_currency_value)
+	
 	queue_free()

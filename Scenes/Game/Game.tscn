@@ -1,69 +1,81 @@
-[gd_scene load_steps=16 format=3 uid="uid://cflssia5voc6d"]
+[gd_scene format=3 uid="uid://cflssia5voc6d"]
 
+[ext_resource type="Script" uid="uid://cml8b4lsrhghi" path="res://Scenes/Game/game_controller.gd" id="1_6581v"]
 [ext_resource type="Script" uid="uid://dffoost8qvnn1" path="res://Systems/Round/round_manager.gd" id="1_fg52j"]
 [ext_resource type="Script" uid="uid://cey2np8cbtlkk" path="res://Systems/Spawning/spawn_manager.gd" id="2_gvja8"]
-[ext_resource type="PackedScene" uid="uid://cmtvkdymkyq2q" path="res://Entities/Player/Player_Ball.tscn" id="3_fuqhk"]
 [ext_resource type="Script" uid="uid://8upkourbo6nd" path="res://Systems/Spawning/ball_config.gd" id="3_m1o7v"]
 [ext_resource type="Resource" uid="uid://dwap6gxx0xe81" path="res://Data/BallConfigs/basic_ball_config.tres" id="4_3586x"]
 [ext_resource type="Resource" uid="uid://ddkkue6rheu32" path="res://Data/BallConfigs/explosive_ball_config.tres" id="5_m1o7v"]
 [ext_resource type="PackedScene" uid="uid://beg8pi5xh6ipb" path="res://Systems/UI/pause_menu.tscn" id="6_3k6gv"]
 [ext_resource type="Script" uid="uid://b8ih4464pl8gu" path="res://Systems/Barriers/barrier_manager.gd" id="6_m1o7v"]
 [ext_resource type="Script" uid="uid://cxx1avhtkiydd" path="res://Entities/Pickup/pickup_config.gd" id="6_ti1oi"]
-[ext_resource type="PackedScene" path="res://Systems/UI/sidebar.tscn" id="7_1q8bt"]
 [ext_resource type="Script" uid="uid://ieqmvtwoqr0a" path="res://Systems/Config/game_config_manager.gd" id="7_3586x"]
 [ext_resource type="Resource" uid="uid://cl1n421pjsrje" path="res://Data/PickupConfigs/bounce_power_pickup_config.tres" id="8_edkrd"]
 [ext_resource type="PackedScene" uid="uid://dmgsmls47pyd4" path="res://Entities/Pickup/essence_pickup.tscn" id="10_bsqcq"]
 [ext_resource type="Script" uid="uid://ca3onv77bj0n1" path="res://Systems/Camera/camera_controller.gd" id="11_bsqcq"]
-[ext_resource type="Script" uid="uid://cqwkjmiapf44q" path="res://Systems/Corruption/corruption_controller.gd" id="11_jf0ra"]
+[ext_resource type="PackedScene" uid="uid://dq2b44obpyqoo" path="res://Systems/UI/round_results_popup.tscn" id="15_jf0ra"]
+[ext_resource type="Script" uid="uid://0ffrcldmt17m" path="res://Systems/Player/cursor_hitbox_controller.gd" id="16_6581v"]
+[ext_resource type="PackedScene" uid="uid://b33miyp77akwh" path="res://Scenes/Menus/upgrade_menu.tscn" id="16_fg52j"]
+[ext_resource type="Script" uid="uid://cbp1y6tmm5bfn" path="res://Systems/Spawning/budding_spawner.gd" id="17_6581v"]
+[ext_resource type="Script" uid="uid://c5q5ohnhn6aua" path="res://Systems/Player/cursor_pickup_area.gd" id="18_6hht6"]
 
-[node name="Game" type="Node2D"]
+[node name="Game" type="Node2D" unique_id=1935238782]
+script = ExtResource("1_6581v")
 
-[node name="RoundManager" type="Node" parent="."]
+[node name="RoundManager" type="Node" parent="." unique_id=278509132]
 script = ExtResource("1_fg52j")
+base_round_duration = 3000.0
+ball_spawn_interval = 1.0
+basic_ball_config = ExtResource("4_3586x")
 metadata/_custom_type_script = "uid://dffoost8qvnn1"
 
-[node name="SpawnManager" type="Node" parent="." groups=["spawn_manager"]]
+[node name="SpawnManager" type="Node" parent="." unique_id=1268391359 groups=["spawn_manager"]]
 script = ExtResource("2_gvja8")
 spawnable_balls = Array[ExtResource("3_m1o7v")]([ExtResource("4_3586x"), ExtResource("5_m1o7v")])
 spawnable_pickups = Array[ExtResource("6_ti1oi")]([ExtResource("8_edkrd")])
 pickup_spawning_enabled = true
 metadata/_custom_type_script = "uid://cey2np8cbtlkk"
 
-[node name="BarrierManager" type="Node" parent="." groups=["barrier_manager"]]
+[node name="BarrierManager" type="Node" parent="." unique_id=84580672 groups=["barrier_manager"]]
 script = ExtResource("6_m1o7v")
-starting_barriers = 50
-barrier_thickness = 25.0
+starting_barriers = 5
+barrier_thickness = 40.0
 initial_play_area_size = Vector2(250, 250)
-bounce_requirements = Array[int]([20, 50, 100, 150, 200, 1250, 1500, 2000, 3000, 5000])
-barrier_zoom_levels = Array[float]([3.0, 2.0, 1.8, 1.5, 1.5, 1.25, 1.1, 1.0, 1.0, 1.0])
+final_barrier_tier = 4
+bounce_requirements = Array[int]([50, 50, 75, 100, 150])
+barrier_zoom_levels = Array[float]([2.2, 2.0, 1.8, 1.5, 1.5])
 essence_pickup_scene = ExtResource("10_bsqcq")
 
-[node name="GameConfigManager" type="Node" parent="." groups=["game_config_manager"]]
+[node name="GameConfigManager" type="Node" parent="." unique_id=584864024 groups=["game_config_manager"]]
 script = ExtResource("7_3586x")
 base_max_basic_balls = 10
 base_max_total_balls = 999
 special_ball_max_increase = 100
 metadata/_custom_type_script = "uid://ieqmvtwoqr0a"
 
-[node name="CorruptionController" type="Node" parent="."]
-script = ExtResource("11_jf0ra")
-base_corruption_chance = 1.0
-metadata/_custom_type_script = "uid://cqwkjmiapf44q"
-
-[node name="Camera2D" type="Camera2D" parent="." groups=["camera"]]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=38128974 groups=["camera"]]
 script = ExtResource("11_bsqcq")
 
-[node name="PauseMenu" parent="." instance=ExtResource("6_3k6gv")]
+[node name="RoundResultsPopup" parent="." unique_id=1668212700 instance=ExtResource("15_jf0ra")]
 visible = false
 
-[node name="Sidebar" parent="." instance=ExtResource("7_1q8bt")]
+[node name="UpgradeMenu" parent="." unique_id=1479840081 instance=ExtResource("16_fg52j")]
+visible = false
 
-[node name="CharacterBody2D" parent="." instance=ExtResource("3_fuqhk")]
-force_multiplier = 5.0
-launched_grace_period = 0.4
-trail_length = 5
-trail_color = Color(1, 1, 1, 0.7764706)
-trail_width = 5.0
-max_velocity_multiplier = 1.0
+[node name="PauseMenu" parent="." unique_id=1630778384 instance=ExtResource("6_3k6gv")]
+layer = 100
+visible = false
 
-[node name="PlayerLaunchTrail" type="Line2D" parent="."]
+[node name="CursorHitboxController" type="Node2D" parent="." unique_id=481219548]
+script = ExtResource("16_6581v")
+max_charge_time = 0.5
+min_hitbox_radius = 5.0
+max_hitbox_radius = 30.0
+
+[node name="BallSpawner" type="Node" parent="." unique_id=887692636 groups=["ball_spawner"]]
+script = ExtResource("17_6581v")
+spawn_velocity = 500.0
+spawn_offset = 25.0
+
+[node name="Area2D" type="Area2D" parent="." unique_id=467879216 groups=["player"]]
+script = ExtResource("18_6hht6")

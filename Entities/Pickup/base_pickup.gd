@@ -16,11 +16,16 @@ func _ready() -> void:
 	add_to_group("pickup")
 	collision_layer = 0
 	collision_mask = 2  # Detect player (layer 2)
-    
-	z_index = -1 # Render below player and balls
-
-	body_entered.connect(_on_body_entered)
+	
+	z_index = -1
+	
+	area_entered.connect(_on_area_entered)  
 	_setup_visuals()
+
+
+func _on_area_entered(area: Area2D) -> void: 
+	if area.is_in_group("player"):
+		_collect(area)
 
 
 func _process(delta: float) -> void:

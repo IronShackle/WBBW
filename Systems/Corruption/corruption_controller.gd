@@ -6,7 +6,7 @@ extends Node
 
 signal corruption_available()
 signal ball_corrupted(ball: BaseBall)
-signal corruption_consumed(prestige_awarded: int)
+signal corruption_consumed()
 
 @export var base_corruption_chance: float = 0.05
 @export var chance_increase_per_collision: float = 0.02
@@ -65,5 +65,4 @@ func _on_barrier_broken(tier: int) -> void:
 
 func _on_corruption_broken(ball: Node2D) -> void:
 	print("[CorruptionController] Corruption broken!")
-	GameManager.add_prestige_points(1)
-	corruption_consumed.emit(1)
+	corruption_consumed.emit()

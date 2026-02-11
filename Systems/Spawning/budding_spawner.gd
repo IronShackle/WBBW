@@ -1,5 +1,5 @@
-# Systems/Spawning/budding_spawner.gd
-class_name BuddingSpawner
+# Systems/Spawning/spawner.gd
+class_name BallSpawner
 extends Node
 
 ## Spawns balls from the player on demand
@@ -32,7 +32,7 @@ func spawn_ball_from_scene(ball_scene: PackedScene) -> Node2D:
 			break
 	
 	if not valid_spawn:
-		push_warning("[BuddingSpawner] Could not find valid spawn position after %d attempts" % max_attempts)
+		push_warning("[Spawner] Could not find valid spawn position after %d attempts" % max_attempts)
 		return null
 	
 	# Spawn the ball
@@ -47,7 +47,7 @@ func spawn_ball_from_scene(ball_scene: PackedScene) -> Node2D:
 	if spawned_bounce:
 		spawned_bounce.call_deferred("apply_knockback", spawn_direction, spawn_velocity)
 	
-	print("[BuddingSpawner] Spawned ball at %s with velocity %s" % [spawn_position, spawn_direction * spawn_velocity])
+	print("[Spawner] Spawned ball at %s with velocity %s" % [spawn_position, spawn_direction * spawn_velocity])
 	
 	return new_ball
 

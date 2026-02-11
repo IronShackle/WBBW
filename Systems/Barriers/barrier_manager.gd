@@ -10,13 +10,16 @@ signal barrier_damage_changed(current: int, required: int)
 # Barrier configuration
 @export var starting_barriers: int = 10
 @export var barrier_thickness: float = 100.0
-@export var barrier_spacing: float = 0.0  # No spacing between layers
+@export var barrier_spacing: float = 0.0
 @export var initial_play_area_size: Vector2 = Vector2(800, 600)
+@export var final_barrier_tier: int = 5
 
 # Shader for damage visualization
 var damage_shader: Shader
 
-# Bounce requirements per tier (can be tuned in inspector)
+signal round_complete()
+
+# Bounce requirements per tier
 @export var bounce_requirements: Array[int] = [
 	100, 
 	200, 
@@ -32,16 +35,16 @@ var damage_shader: Shader
 
 # Zoom settings per barrier tier
 @export var barrier_zoom_levels: Array[float] = [
-	1.0,   # Tier 0 - closest
-	0.95,  # Tier 1
-	0.9,   # Tier 2
-	0.85,  # Tier 3
-	0.8,   # Tier 4
-	0.75,  # Tier 5
-	0.7,   # Tier 6
-	0.65,  # Tier 7
-	0.6,   # Tier 8
-	0.55   # Tier 9 - most zoomed out
+	1.0,
+	0.95,
+	0.9,
+	0.85,
+	0.8,
+	0.75,
+	0.7,
+	0.65,
+	0.6,
+	0.55
 ]
 
 # Essence drops per barrier
@@ -51,31 +54,25 @@ var damage_shader: Shader
 @export var essence_pickup_scene: PackedScene
 
 var barriers: Array[Node2D] = []
-var current_barrier_tier: int = 0  # 0 = innermost
+var current_barrier_tier: int = 0
 var barrier_bounces: int = 0
 
 
-# In BarrierManager - replace _ready():
 func _ready() -> void:
 	add_to_group("barrier_manager")
 	
 	# Load damage shader
 	damage_shader = load("res://Shaders/barrier_damage.gdshader")
 	
-	# Connect to GameManager
-	GameManager.bounce_currency_changed.connect(_on_bounce_registered)
+	GameManager.bounce_registered.connect(register_bounce)
 	
 	# Wait for GameManager to load, then initialize
 	call_deferred("_initialize_barriers")
 
 
-# New function in BarrierManager:
 func _initialize_barriers() -> void:
-	# GameManager has loaded saved state by now
-	# Create barriers based on current_barrier_tier
-	#print("[BarrierManager] Initializing barriers at tier %d" % current_barrier_tier)
 	_create_barriers()
-	#print("[BarrierManager] Created %d barrier layers" % barriers.size())
+	
 	# Set camera zoom for current tier
 	var camera = get_tree().get_first_node_in_group("camera")
 	if camera and current_barrier_tier < barrier_zoom_levels.size():
@@ -93,16 +90,14 @@ func _initialize_barriers() -> void:
 		barrier_damage_changed.emit(barrier_bounces, required)
 
 
-# Replace _create_barriers():
 func _create_barriers() -> void:
 	var center = Vector2.ZERO
 	
-	# Only create barriers from current_barrier_tier onward (skip broken ones)
+	# Only create barriers from current_barrier_tier onward
 	for i in range(current_barrier_tier, starting_barriers):
 		var barrier = _create_barrier_layer(i, center)
 		barriers.append(barrier)
 		add_child(barrier)
-
 
 
 func _create_barrier_layer(tier: int, center: Vector2) -> Node2D:
@@ -165,10 +160,10 @@ func _create_wall(pos: Vector2, size: Vector2) -> StaticBody2D:
 	# Visual (black polygon with shader)
 	var visual = Polygon2D.new()
 	visual.polygon = PackedVector2Array([
-		Vector2(-size.x/2, -size.y/2),  # Top-left
-		Vector2(size.x/2, -size.y/2),   # Top-right
-		Vector2(size.x/2, size.y/2),    # Bottom-right
-		Vector2(-size.x/2, size.y/2)    # Bottom-left
+		Vector2(-size.x/2, -size.y/2),
+		Vector2(size.x/2, -size.y/2),
+		Vector2(size.x/2, size.y/2),
+		Vector2(-size.x/2, size.y/2)
 	])
 	visual.color = Color.BLACK
 	
@@ -188,7 +183,7 @@ func _create_wall(pos: Vector2, size: Vector2) -> StaticBody2D:
 	return wall
 
 
-func _on_bounce_registered(new_bounce_currency: int) -> void:
+func register_bounce() -> void:
 	# Increment barrier damage
 	barrier_bounces += 1
 	
@@ -211,8 +206,6 @@ func _on_bounce_registered(new_bounce_currency: int) -> void:
 func _update_barrier_damage_visual(damage_percent: float) -> void:
 	if current_barrier_tier >= barriers.size():
 		return
-	
-	#print("[BarrierManager] Updating damage visual: %.2f" % damage_percent)
 	
 	var barrier = barriers[current_barrier_tier]
 	if not is_instance_valid(barrier):
@@ -240,22 +233,20 @@ func _update_barrier_damage_visual(damage_percent: float) -> void:
 	var camera = get_tree().get_first_node_in_group("camera")
 	if camera:
 		if damage_percent >= 0.95 and damage_percent < 0.96: 
-			camera.shake_screen(8.0)  # Heavy shake
+			camera.shake_screen(8.0)
 		elif damage_percent >= 0.9 and damage_percent < 0.91:  
-			camera.shake_screen(5.0)  # Medium shake
+			camera.shake_screen(5.0)
 		elif damage_percent >= 0.75 and damage_percent < 0.76: 
-			camera.shake_screen(3.0)   # Light shake
+			camera.shake_screen(3.0)
 
 
 func _break_current_barrier() -> void:
 	if current_barrier_tier >= barriers.size():
-		print("[BarrierManager] All barriers broken!")
 		return
 	
 	# Get barrier reference and validate
 	var barrier = barriers[current_barrier_tier]
 	if not is_instance_valid(barrier):
-		print("[BarrierManager] Barrier already processed")
 		return
 	
 	# GUARD: Prevent double-breaking by immediately incrementing tier
@@ -271,14 +262,11 @@ func _break_current_barrier() -> void:
 		barrier.get_node_or_null("RightWall")
 	]
 	
-	# Flash effect on all walls - tween the modulate instead of color
+	# Camera shake and zoom
 	var camera = get_tree().get_first_node_in_group("camera")
 	if camera:
 		camera.shake_screen(10.0)
-	
-# Set zoom for new tier
-	if current_barrier_tier < barrier_zoom_levels.size():
-		if camera:
+		if current_barrier_tier < barrier_zoom_levels.size():
 			camera.set_target_zoom(barrier_zoom_levels[current_barrier_tier])
 
 	# Wait for flash to start before spawning essence
@@ -296,12 +284,15 @@ func _break_current_barrier() -> void:
 	
 	# Emit signal
 	barrier_broken.emit(breaking_tier)
-	
+
 	# Update UI
 	if current_barrier_tier < barriers.size():
 		var next_required = get_current_barrier_requirement()
 		barrier_damage_changed.emit(0, next_required)
-	
+
+	if breaking_tier >= final_barrier_tier:
+		round_complete.emit()
+
 	# Save state
 	_save_barrier_state()
 
@@ -313,7 +304,7 @@ func _spawn_essence_from_walls(walls: Array) -> void:
 	
 	var wall_names = ["top", "bottom", "left", "right"]
 	
-	# Calculate play area for essence (next barrier inward)
+	# Calculate play area for essence
 	var inner_expansion = current_barrier_tier * (barrier_thickness + barrier_spacing)
 	var inner_size = initial_play_area_size + Vector2(inner_expansion * 2, inner_expansion * 2)
 	var essence_play_radius = min(inner_size.x, inner_size.y) / 2.0 - 15.0
@@ -330,8 +321,6 @@ func _spawn_essence_from_walls(walls: Array) -> void:
 		var wall = walls[wall_index]
 		if not wall:
 			continue
-		
-		var wall_name = wall_names[wall_index]
 		
 		# Get wall's collision shape
 		var collision: CollisionShape2D = null
@@ -363,36 +352,28 @@ func _spawn_essence_from_walls(walls: Array) -> void:
 			essence.set_play_area(Vector2.ZERO, essence_play_radius)
 		
 		get_tree().current_scene.add_child(essence)
-		
-		#print("[BarrierManager] Spawned essence in %s wall at %s" % [wall_name, essence.global_position])
 
 
 func get_current_barrier_requirement() -> int:
 	if current_barrier_tier >= bounce_requirements.size():
-		return 999999  # Fallback for tiers beyond config
+		return 999999
 	return bounce_requirements[current_barrier_tier]
 
 
-
-## Get the current play area size (size of innermost unbroken barrier)
 func get_current_play_area_size() -> Vector2:
-	# Calculate the size based on current barrier tier
 	var expansion = current_barrier_tier * (barrier_thickness + barrier_spacing)
 	return initial_play_area_size + Vector2(expansion * 2, expansion * 2)
 
 
 func _save_barrier_state() -> void:
-	# Called by GameManager during save
 	pass
 
 
 func _load_barrier_state() -> void:
-	# Called on ready to restore state
 	pass
 
 
 func reset_barriers() -> void:
-	# Called on prestige
 	for barrier in barriers:
 		if is_instance_valid(barrier):
 			barrier.queue_free()

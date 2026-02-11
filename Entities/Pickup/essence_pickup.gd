@@ -29,7 +29,7 @@ func _ready() -> void:
 	collision_mask = 2  # Detect player
 	z_index = -1  # Below balls
 	
-	body_entered.connect(_on_body_entered)
+	area_entered.connect(_on_area_entered)
 	
 	# Customize visual
 	visual_color = Color(0.7, 0.5, 1.0)  # Purple for essence

@@ -5,24 +5,22 @@ extends Node
 
 signal game_started()
 signal game_paused(paused: bool)
-signal prestige_triggered(new_level: int)
-signal bounce_currency_changed(new_amount: int)
+signal currency_changed(new_amount: int)
 signal essence_changed(new_amount: int)
+signal bounce_registered()
 
 
 # Persistent progression
-var prestige_level: int = 0
 var total_lifetime_bounces: int = 0
 var unlocked_upgrades: Array[String] = []
 
 # Current run tracking
 var current_run_bounces: int = 0
 
-# Bounce currency (separate from run bounces)
-var bounce_currency: int = 0
-var bounce_currency_per_bounce: int = 1
+# Currency
+var currency: int = 0
 var essence: int = 0
-var essence_per_barrier: int = 1
+var corruption_points: int = 0
 
 # Game state
 var is_paused: bool = false
@@ -56,9 +54,9 @@ func start_game() -> void:
 	
 	# Wait for scene to load, then restore barrier state
 	await get_tree().process_frame
-	await get_tree().process_frame  # Extra frame to be safe
+	await get_tree().process_frame
 	
-	var barrier_data = get("_pending_barrier_data")  # We'll store this
+	var barrier_data = get("_pending_barrier_data")
 	if barrier_data and not barrier_data.is_empty():
 		load_barrier_save_data(barrier_data)
 	
@@ -69,11 +67,6 @@ func return_to_menu() -> void:
 	save_game()
 	in_game = false
 	get_tree().change_scene_to_file("res://Scenes/Menus/main_menu.tscn")
-
-
-func open_prestige_menu() -> void:
-	in_game = false
-	get_tree().change_scene_to_file("res://Scenes/Menus/prestige_menu.tscn")
 
 
 ## Pause system
@@ -93,44 +86,48 @@ func unpause() -> void:
 		toggle_pause()
 
 
-## Bounce tracking
+## Bounce tracking (for barriers only)
 func register_bounce() -> void:
 	current_run_bounces += 1
-	bounce_currency += bounce_currency_per_bounce
-	bounce_currency_changed.emit(bounce_currency)
-	
-	#print("[GameManager] Bounce registered! Run bounces: %d, Currency: %d" % 
-		#[current_run_bounces, bounce_currency])
+	bounce_registered.emit()
 
 
-## Prestige system
-func trigger_prestige() -> void:
-	prestige_level += 1
-	total_lifetime_bounces += current_run_bounces
-	
-	# Don't award points here - barriers already did!
-	current_run_bounces = 0
-	bounce_currency = 0
-	
-	save_game()
-	prestige_triggered.emit(prestige_level)
-	
-	print("[GameManager] Prestige! Level: %d, Lifetime Bounces: %d" % 
-		[prestige_level, total_lifetime_bounces])
-	
-	# Reset barriers
-	var barrier_manager = get_tree().get_first_node_in_group("barrier_manager")
-	if barrier_manager:
-		barrier_manager.reset_barriers()
-	
-	# Open prestige menu
-	open_prestige_menu()
+## Currency system
+func add_currency(amount: int) -> void:
+	currency += amount
+	currency_changed.emit(currency)
 
 
-## Add prestige points from barriers or other sources
-func add_prestige_points(amount: int) -> void:
-	PrestigeManager.add_prestige_points(amount)
-	print("[GameManager] Added %d prestige points" % amount)
+func spend_currency(amount: int) -> bool:
+	if currency >= amount:
+		currency -= amount
+		currency_changed.emit(currency)
+		return true
+	return false
+
+
+func add_essence(amount: int) -> void:
+	essence += amount
+	essence_changed.emit(essence)
+
+
+func spend_essence(amount: int) -> bool:
+	if essence >= amount:
+		essence -= amount
+		essence_changed.emit(essence)
+		return true
+	return false
+
+
+func add_corruption_points(amount: int) -> void:
+	corruption_points += amount
+
+
+func spend_corruption_points(amount: int) -> bool:
+	if corruption_points >= amount:
+		corruption_points -= amount
+		return true
+	return false
 
 
 ## Barrier save/load helpers
@@ -145,10 +142,8 @@ func get_barrier_save_data() -> Dictionary:
 
 
 func load_barrier_save_data(data: Dictionary) -> void:
-	print("[GameManager] Loading barrier data: %s" % data)
 	var barrier_manager = get_tree().get_first_node_in_group("barrier_manager")
 	if barrier_manager and data:
-		print("[GameManager] Found barrier_manager, setting tier to %d" % data.get("current_tier", 0))
 		var tier = data.get("current_tier", 0)
 		var bounces = data.get("barrier_bounces", 0)
 		
@@ -163,23 +158,16 @@ func load_barrier_save_data(data: Dictionary) -> void:
 		# Update UI
 		var required = barrier_manager.get_current_barrier_requirement()
 		barrier_manager.barrier_damage_changed.emit(bounces, required)
-		
-		print("[GameManager] Loaded barrier state: tier %d, bounces %d/%d" % 
-			[tier, bounces, required])
 
-func add_essence(amount: int) -> void:
-	essence += amount
-	essence_changed.emit(essence)
-	print("[GameManager] Added %d essence (total: %d)" % [amount, essence])
 
 ## Save/Load
 func save_game() -> void:
 	var save_data = {
-		"prestige_level": prestige_level,
 		"total_lifetime_bounces": total_lifetime_bounces,
 		"unlocked_upgrades": unlocked_upgrades,
-		"bounce_currency": bounce_currency,
+		"currency": currency,
 		"essence": essence,
+		"corruption_points": corruption_points,
 		"barrier_data": get_barrier_save_data(),
 		"version": "1.0"
 	}
@@ -188,15 +176,12 @@ func save_game() -> void:
 	if file:
 		file.store_string(JSON.stringify(save_data, "\t"))
 		file.close()
-		print("[GameManager] Game saved (Prestige: %d, Lifetime Bounces: %d, Currency: %d)" % 
-			[prestige_level, total_lifetime_bounces, bounce_currency])
 	else:
 		push_error("[GameManager] Failed to save game!")
 
 
 func load_game() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
-		print("[GameManager] No save file found, starting fresh")
 		return
 	
 	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -207,10 +192,10 @@ func load_game() -> void:
 		var save_data = JSON.parse_string(json_string)
 		
 		if save_data:
-			prestige_level = save_data.get("prestige_level", 0)
 			total_lifetime_bounces = save_data.get("total_lifetime_bounces", 0)
-			bounce_currency = save_data.get("bounce_currency", 0)
+			currency = save_data.get("currency", 0)
 			essence = save_data.get("essence", 0)
+			corruption_points = save_data.get("corruption_points", 0)
 			
 			# Handle array conversion for typed arrays
 			var loaded_upgrades = save_data.get("unlocked_upgrades", [])
@@ -223,9 +208,6 @@ func load_game() -> void:
 			var barrier_data = save_data.get("barrier_data", {})
 			if not barrier_data.is_empty():
 				set("_pending_barrier_data", barrier_data)
-			
-			print("[GameManager] Game loaded - Prestige: %d, Lifetime Bounces: %d, Currency: %d" % 
-				[prestige_level, total_lifetime_bounces, bounce_currency])
 		else:
 			push_error("[GameManager] Failed to parse save file!")
 	else:
@@ -233,18 +215,17 @@ func load_game() -> void:
 
 
 func reset_save() -> void:
-	prestige_level = 0
 	total_lifetime_bounces = 0
 	unlocked_upgrades.clear()
 	current_run_bounces = 0
-	bounce_currency = 0
+	currency = 0
 	essence = 0
+	corruption_points = 0
 	
 	if FileAccess.file_exists(SAVE_PATH):
 		DirAccess.remove_absolute(SAVE_PATH)
 	
 	save_game()
-	print("[GameManager] Save reset!")
 
 
 func _notification(what: int) -> void:

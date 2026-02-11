@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://322ocwxn2gm2"]
+[gd_scene load_steps=9 format=3 uid="uid://322ocwxn2gm2"]
 
 [ext_resource type="Script" uid="uid://c811rs2mvlf30" path="res://Entities/Ball/basic_ball.gd" id="1_66s45"]
 [ext_resource type="Script" uid="uid://dij2cg7iuesif" path="res://Systems/Physics/bounce_component.gd" id="2_upugy"]
@@ -9,10 +9,25 @@
 radius = 8.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_wpq7s"]
+radius = 8.0
+
+[sub_resource type="Curve" id="Curve_upugy"]
+_limits = [-360.0, 360.0, 0.0, 1.0]
+_data = [Vector2(0, 360), 0.0, 0.0, 0, 0, Vector2(1, -360), -1236.8557, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_erdxe"]
+_data = [Vector2(0, 1), 0.0, -1.0, 0, 1, Vector2(1, 0), -1.0, 0.0, 1, 0]
+point_count = 2
 
 [node name="CharacterBody2D" type="CharacterBody2D" groups=["ball"]]
+collision_layer = 0
 motion_mode = 1
 script = ExtResource("1_66s45")
+base_max_velocity = 12000.0
+base_friction_deceleration = 300.0
+base_wall_bounce_damping = 0.8
+ball_radius = 8.0
 
 [node name="BounceComponent" type="Node" parent="."]
 script = ExtResource("2_upugy")
@@ -26,12 +41,9 @@ metadata/_custom_type_script = "uid://dft3feb763ol7"
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_n07ev")
 
-[node name="Polygon2D" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, -10, 10, 0, 0, 10, -10, 0)
-
 [node name="BallDetection" type="Area2D" parent="."]
-collision_mask = 5
-monitorable = false
+collision_layer = 2
+collision_mask = 6
 script = ExtResource("3_66s45")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BallDetection"]
@@ -51,3 +63,20 @@ initial_velocity_max = 77.34
 linear_accel_min = 47.42
 linear_accel_max = 47.42
 scale_amount_max = 2.0
+
+[node name="ExplosionParticles" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 20
+one_shot = true
+explosiveness = 1.0
+randomness = 0.3
+emission_shape = 1
+emission_sphere_radius = 7.0
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 100.0
+initial_velocity_max = 200.0
+angular_velocity_curve = SubResource("Curve_upugy")
+scale_amount_min = 1.5
+scale_amount_max = 3.0
+scale_amount_curve = SubResource("Curve_erdxe")

@@ -49,24 +49,27 @@ func _setup_detection_area() -> void:
 		detection_area.collision_layer = 0
 		detection_area.collision_mask = 1
 	
-	if not detection_area.body_entered.is_connected(_on_ball_body_entered):
-		detection_area.body_entered.connect(_on_ball_body_entered)
+	if not detection_area.area_entered.is_connected(_on_ball_area_entered):
+		detection_area.area_entered.connect(_on_ball_area_entered)
 
 
-func _on_ball_body_entered(other_body: Node2D) -> void:
-	if other_body == body:
+func _on_ball_area_entered(other_area: Area2D) -> void:
+	# Get the ball from the area's parent
+	var other_ball = other_area.get_parent()
+	
+	if other_ball == body:
 		return
 	
-	if not other_body.has_node("BounceComponent"):
+	if not other_ball.has_node("BounceComponent"):
 		return
 	
-	var ball_id = other_body.get_instance_id()
+	var ball_id = other_ball.get_instance_id()
 	
 	if collided_balls.has(ball_id):
 		return
 
-	if other_body not in pending_ball_collisions:
-		pending_ball_collisions.append(other_body)
+	if other_ball not in pending_ball_collisions:
+		pending_ball_collisions.append(other_ball)
 
 
 func _physics_process(delta: float) -> void:
@@ -227,5 +230,7 @@ func get_ball_collision_kickback() -> float:
 
 func get_max_velocity() -> float:
 	if body and body is BaseBall:
+		print("[BounceComponent] Using BaseBall max_velocity: ", body.max_velocity)
 		return body.max_velocity
+	print("[BounceComponent] Using fallback velocity: 1000.0, body type: ", body.get_class() if body else "null")
 	return 1000.0
